@@ -510,11 +510,12 @@ function renderHistory(){
   const cont=document.getElementById('hist-list');
   if(!history.length){cont.innerHTML='<div class="empty-prog" style="margin-top:20px">Nog geen workouts gelogd</div>';return;}
   const cols=['var(--blue)','var(--green)','var(--amber)','var(--accent)'];
-  cont.innerHTML=[...history].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(s=>{
+  cont.innerHTML=history.map((s,i)=>({...s,_i:i})).sort((a,b)=>new Date(b.date)-new Date(a.date)).map(s=>{
     const d=new Date(s.date);const vol=calcVol(s.exercises);const hasPR=s.prs&&s.prs.length>0;
-    return`<div class="hi-item"><div><div class="hi-day" style="color:${cols[s.dayIndex]||'var(--text)'}">${s.dayName}</div><div class="hi-date">${d.toLocaleDateString('nl-BE',{weekday:'short',day:'numeric',month:'short'})}</div></div><div class="hi-badges">${hasPR?'<span class="hi-badge pr">🏆 PR</span>':''}${vol>0?`<span class="hi-badge">${Math.round(vol)} kg</span>`:''}<span class="hi-badge">${s.exercises?s.exercises.length:0} oef.</span></div></div>`;
+    return`<div class="hi-item"><div><div class="hi-day" style="color:${cols[s.dayIndex]||'var(--text)'}">${s.dayName}</div><div class="hi-date">${d.toLocaleDateString('nl-BE',{weekday:'short',day:'numeric',month:'short'})}</div></div><div class="hi-badges">${hasPR?'<span class="hi-badge pr">🏆 PR</span>':''}${vol>0?`<span class="hi-badge">${Math.round(vol)} kg</span>`:''}<span class="hi-badge">${s.exercises?s.exercises.length:0} oef.</span><button onclick="deleteSession(${s._i})" style="background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:0 4px" title="Verwijder">🗑</button></div></div>`;
   }).join('');
 }
+function deleteSession(i){if(confirm('Sessie verwijderen?')){history.splice(i,1);persist();renderHistory();}}
 
 // STREAK MODAL
 function showStreakModal(){
