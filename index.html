@@ -147,7 +147,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
     </div>
     <div class="streak-pill" onclick="showStreakModal()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-      <span id="streak-val">0</span>&nbsp;dagen
+      <span id="streak-val">0</span>&nbsp;weken
     </div>
   </div>
 </div>
@@ -214,7 +214,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
     <div class="metric-box"><div class="metric-label">Sessies</div><div class="metric-val" id="m-sessions">0</div></div>
     <div class="metric-box"><div class="metric-label">Deze week</div><div class="metric-val" id="m-week">0</div></div>
     <div class="metric-box"><div class="metric-label">Volume (kg)</div><div class="metric-val" id="m-vol">0</div><div class="metric-sub">sets x reps x kg</div></div>
-    <div class="metric-box"><div class="metric-label">Beste streak</div><div class="metric-val" id="m-bstreak">0</div><div class="metric-sub">dagen op rij</div></div>
+    <div class="metric-box"><div class="metric-label">Beste streak</div><div class="metric-val" id="m-bstreak">0</div><div class="metric-sub">weken op rij</div></div>
   </div>
   <div class="prog-tabs">
     <button class="prog-tab active" onclick="showProgSec('grafiek',this)">Grafiek</button>
@@ -331,15 +331,15 @@ const WEEK=[
   {day:'Zo',type:'kracht',name:'Dag 4 - Schouders & Core',color:'var(--accent)'}
 ];
 const MILESTONES=[
-  {days:3,emoji:'⚡',title:'3 dagen op rij!',msg:'Goed begin. De gewoonte begint te vormen.'},
-  {days:7,emoji:'🔥',title:'1 week streak!',msg:'Een volle week. Dat is al meer dan de meeste mensen halen.'},
-  {days:14,emoji:'💪',title:'2 weken non-stop',msg:'14 dagen. Consistent bezig, dat telt.'},
-  {days:21,emoji:'🏆',title:'3 weken streak!',msg:'21 dagen — ze zeggen dat het dan een gewoonte wordt. Klopt.'},
-  {days:30,emoji:'🌟',title:'30 dagen!',msg:'Een maand zonder stoppen. Serieus niveau.'}
+  {weeks:2,emoji:'⚡',title:'2 weken op rij!',msg:'Twee weken je doel gehaald. De gewoonte zet zich.'},
+  {weeks:4,emoji:'🔥',title:'4 weken streak!',msg:'Een volle maand consistent. Dat is al meer dan de meesten halen.'},
+  {weeks:8,emoji:'💪',title:'8 weken non-stop',msg:'Twee maanden. Dit is geen toeval meer, dit is routine.'},
+  {weeks:12,emoji:'🏆',title:'12 weken streak!',msg:'Drie maanden. Hier begin je het echt te zien en te voelen.'},
+  {weeks:26,emoji:'🌟',title:'Een half jaar!',msg:'26 weken op rij. Serieus niveau. Petje af.'}
 ];
 
 let curDay=0,logData={},history=[],strChart=null;
-let timerIv=null,timerTotal=90,timerLeft=90;
+let timerIv=null,timerTotal=90,timerLeft=90,timerEndTime=null;
 
 function load(){try{history=JSON.parse(localStorage.getItem('wt_h4')||'[]')}catch(e){history=[]}try{logData=JSON.parse(localStorage.getItem('wt_l4')||'{}')}catch(e){logData={}}}
 function persist(){localStorage.setItem('wt_h4',JSON.stringify(history));localStorage.setItem('wt_l4',JSON.stringify(logData))}
@@ -369,22 +369,23 @@ function renderForm(){
     const savedEx=saved.find(e=>e.n===ex.n)||null;
     const lk=lastKg(ex.n);const mk=maxKg(ex.n);
     const hint=ex.kg===0?'Bodyweight':lk!==null?`Vorig: ${lk} kg`:`Start: ${ex.kg} kg`;
+    const isTimed=ex.reps.includes('s');const holdSec=isTimed?parseInt(ex.reps.replace('s','').split('-').pop())||30:0;
     const block=document.createElement('div');
     block.className='log-ex-block'+(ex.ssp?' ss-b':ex.ss?' ss-a':'');
-    block.innerHTML=`<div class="log-ex-hdr"><span class="log-ex-name">${ex.n}${ex.ss?`<span class="ss-tag">SS</span>`:ex.ssp?`<span class="ss-tag">^</span>`:''}</span><div class="log-ex-meta">${mk>0?`<span class="pr-badge">PR: ${mk}kg</span>`:''}<span class="log-ex-hint">${hint}</span></div></div><div class="sets-hdr"><span>#</span><span>Reps</span><span>Kg</span><span>⏱</span><span></span></div>`;
+    block.innerHTML=`<div class="log-ex-hdr"><span class="log-ex-name">${ex.n}${ex.ss?`<span class="ss-tag">SS</span>`:ex.ssp?`<span class="ss-tag">^</span>`:''}</span><div class="log-ex-meta">${mk>0?`<span class="pr-badge">PR: ${mk}kg</span>`:''}<span class="log-ex-hint">${isTimed?`${holdSec}s houden`:hint}</span>${isTimed?`<button class="timer-btn" onclick="startTimer(${holdSec},'${ex.n.replace(/'/g,'')} hold')" title="Hold-timer">▶</button>`:''}</div></div><div class="sets-hdr"><span>#</span><span>${isTimed?'Sec.':'Reps'}</span><span>Kg</span><span>⏱</span><span></span></div>`;
     for(let s=0;s<ex.s;s++){
-      const sv=savedEx&&savedEx.sets[s]?savedEx.sets[s]:{reps:'',kg:ex.kg>0?(lk!==null?lk:ex.kg):'',done:false};
+      const sv=savedEx&&savedEx.sets[s]?savedEx.sets[s]:{reps:isTimed?String(holdSec):'',kg:ex.kg>0?(lk!==null?lk:ex.kg):'',done:false};
       const row=document.createElement('div');
       row.className='set-row'+(sv.done?' done-row':'');
       row.id=`sr-${curDay}-${ei}-${s}`;
-      row.innerHTML=`<span class="set-num">${s+1}</span><input class="set-inp" type="number" inputmode="decimal" min="0" max="99" placeholder="-" value="${sv.reps}" oninput="updSet(${ei},${s},this,'reps')"><input class="set-inp" type="number" inputmode="decimal" min="0" max="999" step="0.25" placeholder="-" value="${sv.kg}" oninput="updSet(${ei},${s},this,'kg')"><button class="timer-btn" onclick="startTimer(${ex.rest},'${ex.n.replace(/'/g,'')}')" title="Start timer">⏱</button><button class="check-btn ${sv.done?'done':''}" onclick="togCheck(${ei},${s},this)" aria-label="afvinken"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></button>`;
+      row.innerHTML=`<span class="set-num">${s+1}</span><input class="set-inp" type="number" inputmode="decimal" min="0" max="99" placeholder="-" value="${sv.reps}" oninput="updSet(${ei},${s},this,'reps')"><input class="set-inp" type="text" inputmode="decimal" placeholder="-" value="${sv.kg}" oninput="updSet(${ei},${s},this,'kg')"><button class="timer-btn" onclick="startTimer(${ex.rest},'${ex.n.replace(/'/g,'')}')" title="Start timer">⏱</button><button class="check-btn ${sv.done?'done':''}" onclick="togCheck(${ei},${s},this)" aria-label="afvinken"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></button>`;
       block.appendChild(row);
     }
     form.appendChild(block);
   });
 }
 
-function updSet(ei,si,inp,f){const e=ensureEntry(ei);e.sets[si][f]=inp.value;persist();}
+function updSet(ei,si,inp,f){const e=ensureEntry(ei);let v=inp.value;if(f==='kg'){v=v.replace(',','.');inp.value=v;}e.sets[si][f]=v;persist();}
 function togCheck(ei,si,btn){
   const e=ensureEntry(ei);e.sets[si].done=!e.sets[si].done;
   btn.classList.toggle('done',e.sets[si].done);
@@ -407,21 +408,20 @@ function saveSession(){
   if(newPRs.length){showToast('🏆 PR! '+newPRs.join(', '),'pr',3500);}
   else showToast('Workout opgeslagen!','green');
   const streak=calcStreak();
-  const m=MILESTONES.find(m=>m.days===streak);
-  if(m)setTimeout(()=>{setModal(m.emoji,m.title,m.msg);document.getElementById('streak-modal').classList.remove('hidden');},1500);
   document.getElementById('streak-val').textContent=streak;
+  checkMilestone(streak);
 }
 
-function clearLog(){if(confirm('Wis huidige invoer?')){logData[curDay]={};persist();renderForm();}}
+function clearLog(){if(confirm('Reps en vinkjes wissen? Gewicht blijft op de vorige sessie staan.')){delete logData[curDay];persist();renderForm();}}
 
 // TIMER
 function startTimer(secs,name){
   if(timerIv){clearInterval(timerIv);timerIv=null;}
-  timerTotal=secs;timerLeft=secs;
+  timerTotal=secs;timerLeft=secs;timerEndTime=Date.now()+secs*1000;
   document.getElementById('timer-sub').textContent='Na: '+name;
   document.getElementById('timer-ov').classList.remove('hidden');
   updTimer();
-  timerIv=setInterval(()=>{timerLeft--;updTimer();if(timerLeft<=0){clearInterval(timerIv);timerIv=null;if(navigator.vibrate)navigator.vibrate([200,100,200]);document.getElementById('timer-ov').classList.add('hidden');showToast('Rust voorbij!','green');}},1000);
+  timerIv=setInterval(()=>{timerLeft=Math.max(0,Math.round((timerEndTime-Date.now())/1000));updTimer();if(timerLeft<=0){clearInterval(timerIv);timerIv=null;timerEndTime=null;if(navigator.vibrate)navigator.vibrate([200,100,200]);document.getElementById('timer-ov').classList.add('hidden');showToast('Rust voorbij!','green');}},500);
 }
 function updTimer(){
   document.getElementById('timer-secs').textContent=timerLeft;
@@ -429,13 +429,16 @@ function updTimer(){
   document.getElementById('tc-fg').style.strokeDashoffset=circ*(1-pct);
   document.getElementById('tc-fg').style.stroke=pct>0.5?'#c8f135':pct>0.25?'#fbbf24':'#f87171';
 }
-function timerAdd(){timerLeft=Math.min(timerLeft+30,timerTotal+60);timerTotal=Math.max(timerTotal,timerLeft);updTimer();}
-function timerClose(){if(timerIv){clearInterval(timerIv);timerIv=null;}document.getElementById('timer-ov').classList.add('hidden');}
+function timerAdd(){timerLeft=Math.min(timerLeft+30,timerTotal+60);timerTotal=Math.max(timerTotal,timerLeft);timerEndTime=Date.now()+timerLeft*1000;updTimer();}
+function timerClose(){if(timerIv){clearInterval(timerIv);timerIv=null;}timerEndTime=null;document.getElementById('timer-ov').classList.add('hidden');}
 
 // PROGRESS
 function calcVol(ex){if(!ex)return 0;return ex.reduce((a,e)=>a+e.sets.reduce((b,s)=>b+(parseFloat(s.reps)||0)*(parseFloat(s.kg)||0),0),0);}
-function calcStreak(){const dates=[...new Set(history.map(h=>h.date.slice(0,10)))].sort().reverse();let streak=0,check=new Date();check.setHours(0,0,0,0);for(const d of dates){const dd=new Date(d);const diff=Math.round((check-dd)/86400000);if(diff>1)break;streak++;check=dd;}return streak;}
-function calcBest(){if(!history.length)return 0;const dates=[...new Set(history.map(h=>h.date.slice(0,10)))].sort();let best=1,cur=1;for(let i=1;i<dates.length;i++){const diff=(new Date(dates[i])-new Date(dates[i-1]))/86400000;if(diff===1){cur++;best=Math.max(best,cur);}else cur=1;}return best;}
+const WEEK_TARGET=3; // minimum sessies in een week om die week mee te tellen voor de streak
+function weekStart(d){const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x.getTime();}
+function weekCounts(){const c={};history.forEach(h=>{const k=weekStart(h.date);c[k]=(c[k]||0)+1;});return c;}
+function calcStreak(){if(!history.length)return 0;const c=weekCounts();const d=new Date();let probe=weekStart(d);if((c[probe]||0)<WEEK_TARGET){d.setDate(d.getDate()-7);probe=weekStart(d);}let streak=0;while((c[probe]||0)>=WEEK_TARGET){streak++;d.setDate(d.getDate()-7);probe=weekStart(d);}return streak;}
+function calcBest(){const c=weekCounts();const weeks=Object.keys(c).filter(k=>c[k]>=WEEK_TARGET).map(Number).sort((a,b)=>a-b);if(!weeks.length)return 0;let best=1,cur=1;for(let i=1;i<weeks.length;i++){if(Math.round((weeks[i]-weeks[i-1])/86400000)===7){cur++;best=Math.max(best,cur);}else cur=1;}return best;}
 
 function renderProgress(){
   const now=new Date(),wk=new Date(now);wk.setDate(now.getDate()-now.getDay());
@@ -516,17 +519,35 @@ function renderHistory(){
 // STREAK MODAL
 function showStreakModal(){
   const s=calcStreak(),b=calcBest();
-  let e='⚡',t=`${s} dagen streak`,m='';
-  if(s===0){e='💤';t='Geen actieve streak';m='Log een workout om te beginnen.';}
-  else if(s<3)m=`${s} dag${s>1?'en':''} op rij. Bouw verder.`;
-  else if(s<7){e='🔥';m='De gewoonte begint te vormen.';}
-  else if(s<14){e='💪';m='Een volle week of meer. Goed bezig.';}
-  else{e='🏆';m=`${s} dagen op rij. Indrukwekkend.`;}
-  if(b>s)m+=` Beste streak: ${b} dagen.`;
+  let e='⚡',t=`${s} weken streak`,m='';
+  if(s===0){e='💤';t='Geen actieve streak';m=`Haal ${WEEK_TARGET}+ sessies in een week om je streak te starten.`;}
+  else if(s<2)m=`${s} week gehaald. Bouw verder.`;
+  else if(s<4){e='🔥';m='Een paar weken consistent. De gewoonte zet zich.';}
+  else if(s<12){e='💪';m='Een maand of meer op rij. Sterk bezig.';}
+  else{e='🏆';m=`${s} weken op rij. Indrukwekkend.`;}
+  if(b>s)m+=` Beste streak: ${b} weken.`;
   setModal(e,t,m);document.getElementById('streak-modal').classList.remove('hidden');
 }
 function setModal(e,t,m){document.getElementById('modal-emoji').textContent=e;document.getElementById('modal-title').textContent=t;document.getElementById('modal-sub').textContent=m;}
 function closeModal(){document.getElementById('streak-modal').classList.add('hidden');}
+function checkMilestone(streak){
+  const prev=parseInt(localStorage.getItem('wt_ls')||'0',10);
+  if(streak>prev){
+    const m=MILESTONES.find(m=>m.weeks===streak);
+    if(m)setTimeout(()=>{setModal(m.emoji,m.title,m.msg);document.getElementById('streak-modal').classList.remove('hidden');celebrate();},900);
+  }
+  localStorage.setItem('wt_ls',String(streak));
+}
+function celebrate(){
+  if(navigator.vibrate)navigator.vibrate([60,40,60,40,120]);
+  const cv=document.createElement('canvas');
+  cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:700';
+  document.body.appendChild(cv);
+  const ctx=cv.getContext('2d');const W=cv.width=window.innerWidth,H=cv.height=window.innerHeight;
+  const colors=['#c8f135','#fbbf24','#34d399','#4a9eff','#a78bfa'];
+  const parts=[];for(let i=0;i<130;i++)parts.push({x:W/2+(Math.random()-.5)*80,y:H*.34,vx:(Math.random()-.5)*9,vy:Math.random()*-11-4,g:.28+Math.random()*.12,r:Math.random()*6+3,c:colors[i%colors.length],rot:Math.random()*6,vr:(Math.random()-.5)*.3,a:1});
+  let t=0;(function frame(){t++;ctx.clearRect(0,0,W,H);parts.forEach(p=>{p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;if(t>55)p.a-=.02;ctx.save();ctx.globalAlpha=Math.max(0,p.a);ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.fillStyle=p.c;ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*1.7);ctx.restore();});if(t<120)requestAnimationFrame(frame);else cv.remove();})();
+}
 
 // TOAST & NAV
 function showToast(msg,type='green',dur=2200){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast ${type}`;t.style.display='block';setTimeout(()=>t.style.display='none',dur);}
@@ -537,6 +558,7 @@ renderPlanKracht();renderPlanWeek();renderPills();renderForm();
 document.getElementById('log-date').textContent=new Date().toLocaleDateString('nl-BE',{weekday:'long',day:'numeric',month:'long'});
 document.getElementById('streak-val').textContent=calcStreak();
 const cs=document.createElement('script');cs.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';document.head.appendChild(cs);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&timerIv&&timerEndTime){timerLeft=Math.max(0,Math.round((timerEndTime-Date.now())/1000));updTimer();if(timerLeft<=0){clearInterval(timerIv);timerIv=null;timerEndTime=null;if(navigator.vibrate)navigator.vibrate([200,100,200]);document.getElementById('timer-ov').classList.add('hidden');showToast('Rust voorbij!','green');}}});
 </script>
 </body>
 </html>
