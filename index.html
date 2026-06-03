@@ -55,9 +55,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .log-ex-meta{display:flex;align-items:center;gap:7px}
 .log-ex-hint{font-size:11px;color:var(--text3)}
 .pr-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--amber-dim);color:var(--amber);border:1px solid rgba(251,191,36,0.2)}
-.sets-hdr{display:grid;grid-template-columns:22px 1fr 1fr 34px 34px;gap:6px;padding:7px 14px;background:var(--bg3)}
+.sets-hdr{display:grid;grid-template-columns:22px 1fr 1fr 40px 34px 34px;gap:6px;padding:7px 14px;background:var(--bg3)}
 .sets-hdr span{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px}
-.set-row{display:grid;grid-template-columns:22px 1fr 1fr 34px 34px;gap:6px;padding:9px 14px;border-top:1px solid var(--border);align-items:center}
+.set-row{display:grid;grid-template-columns:22px 1fr 1fr 40px 34px 34px;gap:6px;padding:9px 14px;border-top:1px solid var(--border);align-items:center}
 .set-row.done-row{background:rgba(52,211,153,0.04)}
 .set-num{font-size:12px;color:var(--text3);font-weight:600}
 .set-inp{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 4px;font-size:15px;color:var(--text);width:100%;-webkit-appearance:none;appearance:none;text-align:center}
@@ -359,6 +359,7 @@ function renderPills(){document.getElementById('log-pills').innerHTML=DAYS.map((
 function selDay(i){curDay=i;renderPills();renderForm();}
 function lastKg(n){for(let i=history.length-1;i>=0;i--){const e=history[i].exercises&&history[i].exercises.find(e=>e.n===n);if(e){const v=e.sets.map(s=>parseFloat(s.kg)).filter(v=>!isNaN(v)&&v>0);if(v.length)return Math.max(...v);}}return null;}
 function maxKg(n){let m=0;history.forEach(h=>{const e=h.exercises&&h.exercises.find(e=>e.n===n);if(e){const v=e.sets.map(s=>parseFloat(s.kg)).filter(v=>!isNaN(v)&&v>0);if(v.length)m=Math.max(m,...v);}});return m;}
+function lastReps(exName,setIdx){for(let i=history.length-1;i>=0;i--){const e=history[i].exercises&&history[i].exercises.find(e=>e.n===exName);if(e&&e.sets[setIdx]){const r=e.sets[setIdx].reps;if(r!==''&&r!==undefined)return r;}}return null;}
 function ensureEntry(ei){if(!logData[curDay])logData[curDay]=[];const ex=DAYS[curDay].exercises[ei];if(!logData[curDay].find(e=>e.n===ex.n))logData[curDay].push({n:ex.n,sets:Array(ex.s).fill(null).map(()=>({reps:'',kg:ex.kg>0?ex.kg:'',done:false}))});return logData[curDay].find(e=>e.n===ex.n);}
 
 function renderForm(){
@@ -372,13 +373,14 @@ function renderForm(){
     const isTimed=ex.reps.includes('s');const holdSec=isTimed?parseInt(ex.reps.replace('s','').split('-').pop())||30:0;
     const block=document.createElement('div');
     block.className='log-ex-block'+(ex.ssp?' ss-b':ex.ss?' ss-a':'');
-    block.innerHTML=`<div class="log-ex-hdr"><span class="log-ex-name">${ex.n}${ex.ss?`<span class="ss-tag">SS</span>`:ex.ssp?`<span class="ss-tag">^</span>`:''}</span><div class="log-ex-meta">${mk>0?`<span class="pr-badge">PR: ${mk}kg</span>`:''}<span class="log-ex-hint">${isTimed?`${holdSec}s houden`:hint}</span>${isTimed?`<button class="timer-btn" onclick="startTimer(${holdSec},'${ex.n.replace(/'/g,'')} hold')" title="Hold-timer">▶</button>`:''}</div></div><div class="sets-hdr"><span>#</span><span>${isTimed?'Sec.':'Reps'}</span><span>Kg</span><span>⏱</span><span></span></div>`;
+block.innerHTML=`<div class="log-ex-hdr"><span class="log-ex-name">${ex.n}${ex.ss?`<span class="ss-tag">SS</span>`:ex.ssp?`<span class="ss-tag">^</span>`:''}</span><div class="log-ex-meta">${mk>0?`<span class="pr-badge">PR: ${mk}kg</span>`:''}<span class="log-ex-hint">${isTimed?`${holdSec}s houden`:hint}</span>${isTimed?`<button class="timer-btn" onclick="startTimer(${holdSec},'${ex.n.replace(/'/g,'')} hold')" title="Hold-timer">▶</button>`:''}</div></div><div class="sets-hdr"><span>#</span><span>${isTimed?'Sec.':'Reps'}</span><span>Kg</span><span style="font-size:9px;text-align:center;color:var(--purple)">DOEL</span><span>⏱</span><span></span></div>`;
     for(let s=0;s<ex.s;s++){
       const sv=savedEx&&savedEx.sets[s]?savedEx.sets[s]:{reps:isTimed?String(holdSec):'',kg:ex.kg>0?(lk!==null?lk:ex.kg):'',done:false};
       const row=document.createElement('div');
       row.className='set-row'+(sv.done?' done-row':'');
       row.id=`sr-${curDay}-${ei}-${s}`;
-      row.innerHTML=`<span class="set-num">${s+1}</span><input class="set-inp" type="number" inputmode="decimal" min="0" max="99" placeholder="-" value="${sv.reps}" oninput="updSet(${ei},${s},this,'reps')"><input class="set-inp" type="text" inputmode="decimal" placeholder="-" value="${sv.kg}" oninput="updSet(${ei},${s},this,'kg')"><button class="timer-btn" onclick="startTimer(${ex.rest},'${ex.n.replace(/'/g,'')}')" title="Start timer">⏱</button><button class="check-btn ${sv.done?'done':''}" onclick="togCheck(${ei},${s},this)" aria-label="afvinken"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></button>`;
+     const lr=lastReps(ex.n,s);
+row.innerHTML=`<span class="set-num">${s+1}</span><input class="set-inp" type="number" inputmode="decimal" min="0" max="99" placeholder="${lr!==null?lr:'-'}" value="${sv.reps}" oninput="updSet(${ei},${s},this,'reps')"><input class="set-inp" type="text" inputmode="decimal" placeholder="-" value="${sv.kg}" oninput="updSet(${ei},${s},this,'kg')"><span style="font-size:11px;font-weight:700;color:var(--purple);text-align:center;align-self:center">${ex.reps}</span><button class="timer-btn" onclick="startTimer(${ex.rest},'${ex.n.replace(/'/g,'')}')" title="Start timer">⏱</button><button class="check-btn ${sv.done?'done':''}" onclick="togCheck(${ei},${s},this)" aria-label="afvinken"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></button>`;
       block.appendChild(row);
     }
     form.appendChild(block);
