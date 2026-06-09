@@ -472,7 +472,20 @@ const MILESTONES=[
 let curDay=0,logData={},history=[],strChart=null;
 let timerIv=null,timerTotal=90,timerLeft=90,timerEndTime=null;
 
-function load(){try{history=JSON.parse(localStorage.getItem('wt_h4')||'[]')}catch(e){history=[]}try{logData=JSON.parse(localStorage.getItem('wt_l4')||'{}')}catch(e){logData={}}}
+function load(){
+  try{history=JSON.parse(localStorage.getItem('wt_h4')||'[]')}catch(e){history=[]}
+  try{logData=JSON.parse(localStorage.getItem('wt_l4')||'{}')}catch(e){logData={}}
+  // Laad opgeslagen gewichten en pas DAYS aan
+  try{
+    const kgs=JSON.parse(localStorage.getItem('wt_kgs')||'{}');
+    DAYS.forEach(d=>d.exercises.forEach(e=>{if(kgs[e.n]!==undefined)e.kg=kgs[e.n];}));
+  }catch(e){}
+}
+function persistKgs(){
+  const kgs={};
+  DAYS.forEach(d=>d.exercises.forEach(e=>{if(e.kg>0)kgs[e.n]=e.kg;}));
+  localStorage.setItem('wt_kgs',JSON.stringify(kgs));
+}
 function persist(){localStorage.setItem('wt_h4',JSON.stringify(history));localStorage.setItem('wt_l4',JSON.stringify(logData))}
 load();
 
@@ -544,9 +557,11 @@ function saveKgEdit(){
   let val=parseFloat(document.getElementById('kg-edit-inp').value.replace(',','.'));
   if(isNaN(val)||val<0)val=0;
   DAYS[curDay].exercises[ei].kg=val;
+  persistKgs();
   closeKgEdit();
   renderForm();
-  showToast('Startgewicht aangepast','green');
+  renderPlanKracht(); // update plan tab ook
+  showToast('Gewicht opgeslagen','green');
 }
 function togCheck(ei,si,btn){
   const e=ensureEntry(ei);e.sets[si].done=!e.sets[si].done;
