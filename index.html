@@ -212,7 +212,7 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
   <div class="header-top">
     <div>
       <h1>Workout</h1>
-      <div class="header-sub">Spiermassa &nbsp;·&nbsp; 4×/week &nbsp;·&nbsp; Dumbbells</div>
+      <div class="header-sub">Spiermassa &nbsp;·&nbsp; 5×/week &nbsp;·&nbsp; Dumbbells</div>
     </div>
     <div class="streak-pill" onclick="showStreakModal()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
@@ -248,6 +248,21 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
     <div class="modal-title" id="modal-title"></div>
     <div class="modal-sub" id="modal-sub"></div>
     <button class="modal-close" onclick="closeModal()">Sluiten</button>
+  </div>
+</div>
+
+<!-- GEWICHT EDIT MODAL -->
+<div class="modal-ov hidden" id="kg-edit-modal">
+  <div class="modal-box" style="max-width:300px">
+    <div style="font-size:20px;margin-bottom:8px">⚖️</div>
+    <div class="modal-title" style="font-size:15px;margin-bottom:4px" id="kg-edit-title">Startgewicht aanpassen</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:16px" id="kg-edit-sub"></div>
+    <input id="kg-edit-inp" type="text" inputmode="decimal" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px;font-size:20px;color:var(--accent);text-align:center;font-family:'DM Mono',monospace;margin-bottom:12px">
+    <div style="font-size:10px;color:var(--text3);margin-bottom:16px;font-family:'DM Mono',monospace">Beschikbaar: 0 · 2 · 3.25 · 4.5 · 7 · 9.5 · 12 · 14.5 · 17 kg</div>
+    <div style="display:flex;gap:8px">
+      <button onclick="closeKgEdit()" style="flex:1;padding:11px;background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text3);font-size:11px;cursor:pointer;font-family:'DM Mono',monospace">Annuleer</button>
+      <button onclick="saveKgEdit()" style="flex:1;padding:11px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:var(--accent-text);font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Mono',monospace;letter-spacing:1px">Opslaan</button>
+    </div>
   </div>
 </div>
 
@@ -310,7 +325,8 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
       <div class="chart-sub-tabs">
         <button class="chart-sub-tab active" onclick="switchChartType('kg',this)">Gewicht</button>
         <button class="chart-sub-tab" onclick="switchChartType('reps',this)">Reps</button>
-        <button class="chart-sub-tab" onclick="switchChartType('vol',this)">Volume/sessie</button>
+        <button class="chart-sub-tab" onclick="switchChartType('vol',this)">Vol/sessie</button>
+        <button class="chart-sub-tab" onclick="switchChartType('weekvol',this)">Weekvol</button>
       </div>
       <div style="position:relative;height:180px"><canvas id="str-canvas"></canvas></div>
       <div id="str-empty" class="empty-prog" style="display:none">Log je eerste workout</div>
@@ -393,47 +409,57 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
 
 <script>
 const DAYS=[
-  {name:'Borst & Triceps',short:'Borst',tag:'Push',tc:'tag-push',dur:'~50 min',muscles:{Borst:6,Triceps:4,Schouders:1},exercises:[
-    {n:'Chest Press (vloer)',s:4,reps:'8-12',kg:12,rest:90},
-    {n:'Incline DB Press',s:3,reps:'10-12',kg:9.5,rest:90},
-    {n:'DB Flye (vloer)',s:3,reps:'12-15',kg:9.5,rest:60},
-    {n:'Overhead Press',s:3,reps:'10-12',kg:12,rest:90},
-    {n:'Tricep Kickback',s:3,reps:'12-15',kg:7,rest:60},
+  {name:'Push A — Borst & Triceps',short:'Push A',tag:'Push',tc:'tag-push',dur:'~50 min',muscles:{Borst:7,Triceps:4,Schouders:2},exercises:[
+    {n:'Chest Press (vloer)',s:4,reps:'6-10',kg:12,rest:90},
+    {n:'Incline DB Press',s:3,reps:'6-10',kg:9.5,rest:90},
+    {n:'DB Flye (vloer)',s:3,reps:'10-12',kg:9.5,rest:60},
+    {n:'Overhead Press',s:3,reps:'6-10',kg:12,rest:90},
+    {n:'Tricep Kickback',s:3,reps:'10-12',kg:7,rest:60},
     {n:'Diamond Push-up',s:3,reps:'max',kg:0,rest:60}
-  ],warn:'Kickbacks licht houden — ellebogen sparen'},
-  {name:'Rug & Biceps',short:'Rug',tag:'Pull',tc:'tag-pull',dur:'~50 min',muscles:{Rug:7,Biceps:5},exercises:[
-    {n:'Bent-Over Row',s:4,reps:'8-12',kg:12,rest:90},
-    {n:'Single-Arm DB Row',s:3,reps:'10-12',kg:12,rest:90},
-    {n:'DB Pullover',s:3,reps:'12',kg:9.5,rest:60},
-    {n:'Reverse Fly',s:3,reps:'15',kg:9.5,rest:60},
+  ]},
+  {name:'Pull A — Rug & Biceps',short:'Pull A',tag:'Pull',tc:'tag-pull',dur:'~50 min',muscles:{Rug:7,Biceps:5},exercises:[
+    {n:'Bent-Over Row',s:4,reps:'6-10',kg:12,rest:90},
+    {n:'Single-Arm DB Row',s:3,reps:'6-10',kg:12,rest:90},
+    {n:'DB Pullover',s:3,reps:'10-12',kg:9.5,rest:60},
+    {n:'Reverse Fly',s:3,reps:'10-12',kg:9.5,rest:60},
     {n:'Bicep Curl',s:3,reps:'10-12',kg:12,rest:60,ss:'Hammer Curl'},
-    {n:'Hammer Curl',s:3,reps:'12',kg:9.5,rest:90,ssp:true}
+    {n:'Hammer Curl',s:3,reps:'10-12',kg:9.5,rest:90,ssp:true}
   ],warn:'Curls met gecontroleerde negatieve fase — geen swingen'},
   {name:'Benen & Billen',short:'Benen',tag:'Legs',tc:'tag-legs',dur:'~55 min',muscles:{Benen:8,Billen:5,Kuiten:4},exercises:[
-    {n:'Goblet Squat',s:4,reps:'10-12',kg:12,rest:90},
-    {n:'Romanian Deadlift',s:4,reps:'10-12',kg:12,rest:90},
-    {n:'Bulgaarse Split Squat',s:3,reps:'10/been',kg:4.5,rest:90},
-    {n:'Hip Thrust',s:3,reps:'12-15',kg:12,rest:60},
+    {n:'Goblet Squat',s:4,reps:'6-10',kg:12,rest:90},
+    {n:'Romanian Deadlift',s:4,reps:'6-10',kg:12,rest:90},
+    {n:'Bulgaarse Split Squat',s:3,reps:'8/been',kg:4.5,rest:90},
+    {n:'Hip Thrust',s:3,reps:'10-12',kg:12,rest:60},
     {n:'DB Lunge',s:3,reps:'10/been',kg:7,rest:60},
     {n:'Calf Raise',s:4,reps:'20',kg:0,rest:45}
   ]},
-  {name:'Schouders & Core',short:'Schoud.',tag:'Full',tc:'tag-full',dur:'~45 min',muscles:{Schouders:7,Core:6},exercises:[
-    {n:'Lateral Raise',s:4,reps:'12-15',kg:7,rest:60},
-    {n:'Arnold Press',s:3,reps:'10-12',kg:10,rest:90},
-    {n:'Front Raise',s:3,reps:'12',kg:7,rest:60,ss:'Lateral Raise'},
+  {name:'Push B — Borst & Schouders',short:'Push B',tag:'Push',tc:'tag-push',dur:'~50 min',muscles:{Borst:6,Schouders:6,Triceps:3},exercises:[
+    {n:'Chest Press (vloer)',s:4,reps:'6-10',kg:12,rest:90},
+    {n:'DB Flye (vloer)',s:3,reps:'10-12',kg:9.5,rest:60},
+    {n:'Incline DB Press',s:3,reps:'6-10',kg:9.5,rest:90},
+    {n:'Lateral Raise',s:4,reps:'10-12',kg:7,rest:60},
+    {n:'Arnold Press',s:3,reps:'6-10',kg:9.5,rest:90},
+    {n:'Tricep Dip',s:3,reps:'max',kg:0,rest:60}
+  ]},
+  {name:'Pull B — Biceps & Upper Back',short:'Pull B',tag:'Pull',tc:'tag-pull',dur:'~50 min',muscles:{Rug:6,Biceps:6,Core:4},exercises:[
+    {n:'Single-Arm DB Row',s:4,reps:'6-10',kg:12,rest:90},
+    {n:'Reverse Fly',s:3,reps:'10-12',kg:9.5,rest:60},
+    {n:'DB Pullover',s:3,reps:'10-12',kg:9.5,rest:60},
+    {n:'Hammer Curl',s:4,reps:'10-12',kg:9.5,rest:60},
+    {n:'Bicep Curl',s:3,reps:'10-12',kg:12,rest:60},
     {n:'Plank',s:3,reps:'45-60s',kg:0,rest:45},
     {n:'Dead Bug',s:3,reps:'10',kg:0,rest:45},
     {n:'Russian Twist (DB)',s:3,reps:'20',kg:7,rest:45}
-  ],warn:'Arnold press: geen hyperextensie in de ellebogen'}
+  ]}
 ];
 const WEEK=[
-  {day:'Ma',type:'kracht',name:'Dag 1 - Borst & Triceps',color:'var(--accent)'},
-  {day:'Di',type:'rust',name:'Rust / wandelen',color:'var(--text3)'},
-  {day:'Wo',type:'kracht',name:'Dag 2 - Rug & Biceps',color:'var(--accent)'},
-  {day:'Do',type:'rust',name:'Rust',color:'var(--text3)'},
-  {day:'Vr',type:'kracht',name:'Dag 3 - Benen & Billen',color:'var(--accent)'},
-  {day:'Za',type:'rust',name:'Rust / wandelen',color:'var(--text3)'},
-  {day:'Zo',type:'kracht',name:'Dag 4 - Schouders & Core',color:'var(--accent)'}
+  {day:'Ma',type:'kracht',name:'Dag 1 - Push A',color:'var(--accent)'},
+  {day:'Di',type:'kracht',name:'Dag 2 - Pull A',color:'var(--accent)'},
+  {day:'Wo',type:'rust',name:'Rust',color:'var(--text3)'},
+  {day:'Do',type:'kracht',name:'Dag 3 - Benen & Billen',color:'var(--accent)'},
+  {day:'Vr',type:'rust',name:'Rust',color:'var(--text3)'},
+  {day:'Za',type:'kracht',name:'Dag 4 - Push B',color:'var(--accent)'},
+  {day:'Zo',type:'kracht',name:'Dag 5 - Pull B',color:'var(--accent)'}
 ];
 const MILESTONES=[
   {weeks:2,emoji:'⚡',title:'2 weken op rij!',msg:'Twee weken je doel gehaald. De gewoonte zet zich.'},
@@ -460,7 +486,7 @@ function renderPlanWeek(){
 function showPlanSec(s,btn){document.querySelectorAll('.plan-tab-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('plan-kracht').style.display=s==='kracht'?'block':'none';document.getElementById('plan-week').style.display=s==='week'?'block':'none';}
 
 // LOG
-function renderPills(){document.getElementById('log-pills').innerHTML=DAYS.map((d,i)=>`<div class="day-pill ${curDay===i?'active':''}" onclick="selDay(${i})"><div class="dp-label">Dag ${i+1}</div><div class="dp-name">${d.short}</div></div>`).join('');}
+function renderPills(){document.getElementById('log-pills').innerHTML=DAYS.map((d,i)=>`<div class="day-pill ${curDay===i?'active':''}" onclick="selDay(${i})"><div class="dp-label">${d.short}</div><div class="dp-name">${d.tag}</div></div>`).join('');}
 function selDay(i){curDay=i;renderPills();renderForm();}
 function lastKg(n){for(let i=history.length-1;i>=0;i--){const e=history[i].exercises&&history[i].exercises.find(e=>e.n===n);if(e){const v=e.sets.map(s=>parseFloat(s.kg)).filter(v=>!isNaN(v)&&v>0);if(v.length)return Math.max(...v);}}return null;}
 function maxKg(n){let m=0;history.forEach(h=>{const e=h.exercises&&h.exercises.find(e=>e.n===n);if(e){const v=e.sets.map(s=>parseFloat(s.kg)).filter(v=>!isNaN(v)&&v>0);if(v.length)m=Math.max(m,...v);}});return m;}
@@ -478,7 +504,7 @@ function renderForm(){
     const isTimed=ex.reps.includes('s');const holdSec=isTimed?parseInt(ex.reps.replace('s','').split('-').pop())||30:0;
     const block=document.createElement('div');
     block.className='log-ex-block'+(ex.ssp?' ss-b':ex.ss?' ss-a':'');
-block.innerHTML=`<div class="log-ex-hdr"><span class="log-ex-name">${ex.n}${ex.ss?`<span class="ss-tag">SS</span>`:ex.ssp?`<span class="ss-tag">^</span>`:''}</span><div class="log-ex-meta">${mk>0?`<span class="pr-badge">PR: ${mk}kg</span>`:''}<span class="log-ex-hint">${isTimed?`${holdSec}s houden`:hint}</span>${isTimed?`<button class="timer-btn" onclick="startTimer(${holdSec},'${ex.n.replace(/'/g,'')} hold')" title="Hold-timer">▶</button>`:''}</div></div><div class="sets-hdr"><span>#</span><span>${isTimed?'Sec.':'Reps'}</span><span>Kg</span><span style="font-size:9px;text-align:center;color:var(--accent)">DOEL</span><span>⏱</span><span></span></div>`;
+    block.innerHTML=`<div class="log-ex-hdr" oncontextmenu="return false" ontouchstart="startLongPress(event,${ei})" ontouchend="cancelLongPress()" ontouchmove="cancelLongPress()" onmousedown="startLongPress(event,${ei})" onmouseup="cancelLongPress()" onmouseleave="cancelLongPress()"><span class="log-ex-name">${ex.n}${ex.ss?`<span class="ss-tag">SS</span>`:ex.ssp?`<span class="ss-tag">^</span>`:''}</span><div class="log-ex-meta">${mk>0?`<span class="pr-badge">PR: ${mk}kg</span>`:''}<span class="log-ex-hint">${isTimed?`${holdSec}s houden`:hint}</span>${isTimed?`<button class="timer-btn" onclick="startTimer(${holdSec},'${ex.n.replace(/'/g,'')} hold')" title="Hold-timer">▶</button>`:''}</div></div><div class="sets-hdr"><span>#</span><span>${isTimed?'Sec.':'Reps'}</span><span>Kg</span><span style="font-size:9px;text-align:center;color:var(--accent)">DOEL</span><span>⏱</span><span></span></div>`;
     for(let s=0;s<ex.s;s++){
       const sv=savedEx&&savedEx.sets[s]?savedEx.sets[s]:{reps:isTimed?String(holdSec):'',kg:ex.kg>0?(lk!==null?lk:ex.kg):'',done:false};
       const row=document.createElement('div');
@@ -493,6 +519,35 @@ row.innerHTML=`<span class="set-num">${s+1}</span><input class="set-inp${sv.done
 }
 
 function updSet(ei,si,inp,f){const e=ensureEntry(ei);let v=inp.value;if(f==='kg'){v=v.replace(',','.');inp.value=v;}e.sets[si][f]=v;persist();}
+
+// LONG PRESS — gewicht aanpassen
+let _lpTimer=null,_lpEi=null;
+function startLongPress(ev,ei){
+  _lpEi=ei;
+  _lpTimer=setTimeout(()=>{
+    if(navigator.vibrate)navigator.vibrate(40);
+    openKgEdit(ei);
+  },600);
+}
+function cancelLongPress(){if(_lpTimer){clearTimeout(_lpTimer);_lpTimer=null;}}
+function openKgEdit(ei){
+  const ex=DAYS[curDay].exercises[ei];
+  document.getElementById('kg-edit-title').textContent=ex.n;
+  document.getElementById('kg-edit-sub').textContent='Huidig startgewicht: '+(ex.kg===0?'Bodyweight':ex.kg+' kg');
+  document.getElementById('kg-edit-inp').value=ex.kg===0?'0':ex.kg;
+  document.getElementById('kg-edit-modal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('kg-edit-inp').focus(),100);
+}
+function closeKgEdit(){document.getElementById('kg-edit-modal').classList.add('hidden');}
+function saveKgEdit(){
+  const ei=_lpEi;if(ei===null)return;
+  let val=parseFloat(document.getElementById('kg-edit-inp').value.replace(',','.'));
+  if(isNaN(val)||val<0)val=0;
+  DAYS[curDay].exercises[ei].kg=val;
+  closeKgEdit();
+  renderForm();
+  showToast('Startgewicht aangepast','green');
+}
 function togCheck(ei,si,btn){
   const e=ensureEntry(ei);e.sets[si].done=!e.sets[si].done;
   btn.classList.toggle('done',e.sets[si].done);
@@ -574,7 +629,7 @@ function renderProgress(){
 }
 
 function renderFreq(){
-  const dc=[0,0,0,0];history.forEach(h=>{if(h.dayIndex>=0&&h.dayIndex<4)dc[h.dayIndex]++;});
+  const dc=Array(DAYS.length).fill(0);history.forEach(h=>{if(h.dayIndex>=0&&h.dayIndex<DAYS.length)dc[h.dayIndex]++;});
   const mx=Math.max(...dc,1);document.getElementById('freq-bars').innerHTML=dc.map((c,i)=>`<div class="vbar-wrap"><div class="vbar-label"><span style="color:var(--text2)">${DAYS[i].name}</span><span style="color:var(--text3);font-family:'DM Mono',monospace">${c}x</span></div><div class="vbar-bg"><div class="vbar-fill" style="width:${Math.round(c/mx*100)}%;background:var(--accent)"></div></div></div>`).join('');
 }
 
@@ -599,6 +654,19 @@ function renderChart(){
     return;
   }
 
+  // Weekvolume trend
+  if(curChartType==='weekvol'){
+    sel.style.display='none';
+    const wvMap={};
+    history.forEach(h=>{const k=weekStart(h.date);wvMap[k]=(wvMap[k]||0)+Math.round(calcVol(h.exercises));});
+    const weeks=Object.keys(wvMap).map(Number).sort((a,b)=>a-b);
+    if(!weeks.length){canvas.style.display='none';empty.style.display='block';return;}
+    canvas.style.display='block';empty.style.display='none';
+    if(strChart)strChart.destroy();
+    strChart=new Chart(canvas,{type:'bar',data:{labels:weeks.map(w=>{const d=new Date(w);return d.toLocaleDateString('nl-BE',{day:'numeric',month:'short'});}),datasets:[{data:weeks.map(w=>wvMap[w]),backgroundColor:'rgba(200,241,53,0.2)',borderColor:'#c8f135',borderWidth:2,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:([i])=>'Week van '+i.label,label:i=>i.raw+' kg totaal'}}},scales:{x:{ticks:{color:'#3a3a38',font:{size:9,family:'DM Mono, monospace'}},grid:{color:'rgba(255,255,255,0.03)'}},y:{ticks:{color:'#3a3a38',font:{size:9,family:'DM Mono, monospace'},callback:v=>v+' kg'},grid:{color:'rgba(255,255,255,0.03)'},beginAtZero:true}}}});
+    return;
+  }
+
   sel.style.display='';
   const pts=[];
   history.forEach(h=>{const e=h.exercises&&h.exercises.find(e=>e.n===ex);if(e){
@@ -619,7 +687,7 @@ function renderWeek(){
   const wv=wh.reduce((a,h)=>a+calcVol(h.exercises),0);
   const ms={};
   wh.forEach(h=>{const d=DAYS[h.dayIndex];if(!d)return;Object.entries(d.muscles||{}).forEach(([m,s])=>{ms[m]=(ms[m]||0)+s;});});
-  document.getElementById('wk-stats').innerHTML=`<div class="wk-stat"><div class="wk-stat-label">Sessies</div><div class="wk-stat-val" style="color:var(--accent)">${wh.length}<span style="font-size:14px;color:var(--text3)">/4</span></div></div><div class="wk-stat"><div class="wk-stat-label">Volume</div><div class="wk-stat-val" style="font-size:18px;font-family:'DM Mono',monospace">${Math.round(wv).toLocaleString('nl-BE')}<span style="font-size:11px;color:var(--text3)"> kg</span></div></div>`;
+  document.getElementById('wk-stats').innerHTML=`<div class="wk-stat"><div class="wk-stat-label">Sessies</div><div class="wk-stat-val" style="color:var(--accent)">${wh.length}<span style="font-size:14px;color:var(--text3)">/5</span></div></div><div class="wk-stat"><div class="wk-stat-label">Volume</div><div class="wk-stat-val" style="font-size:18px;font-family:'DM Mono',monospace">${Math.round(wv).toLocaleString('nl-BE')}<span style="font-size:11px;color:var(--text3)"> kg</span></div></div>`;
   const mc={};
   const target=10;
   document.getElementById('muscle-bars').innerHTML=Object.entries(ms).filter(([,v])=>v>0).map(([m,v])=>{const pct=Math.min(v/target*100,100);return`<div class="mbar-wrap"><div class="mbar-label"><span style="color:var(--text2)">${m}</span><span style="color:var(--text3);font-family:'DM Mono',monospace">${v} sets</span></div><div class="mbar-bg"><div class="mbar-fill" style="width:${pct}%"></div></div></div>`}).join('')||'<div class="empty-prog">Nog geen workouts deze week</div>';
