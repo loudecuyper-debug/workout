@@ -112,7 +112,14 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
 .chart-box-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .chart-box-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;font-family:'DM Mono',monospace;color:var(--text2)}
 .ex-sel{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:11px;padding:4px 8px;max-width:155px;font-family:'DM Mono',monospace}
-.vbar-wrap{margin-bottom:10px}
+.snelheid-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.snelheid-row:last-child{border-bottom:none}
+.snelheid-ex{font-size:12px;font-weight:600}
+.snelheid-sub{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:2px}
+.snelheid-badge{font-size:9px;font-weight:700;padding:3px 8px;border-radius:3px;font-family:'DM Mono',monospace;white-space:nowrap;letter-spacing:0.5px}
+.sb-up{background:rgba(200,241,53,0.1);color:var(--accent);border:1px solid rgba(200,241,53,0.2)}
+.sb-flat{background:var(--bg3);color:var(--text3);border:1px solid var(--border)}
+.sb-stag{background:rgba(251,146,60,0.1);color:#fb923c;border:1px solid rgba(251,146,60,0.2)}
 .vbar-label{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;font-family:'DM Mono',monospace;color:var(--text2)}
 .vbar-bg{height:3px;background:var(--bg4);border-radius:0;overflow:hidden}
 .vbar-fill{height:100%;border-radius:0;transition:width .5s}
@@ -315,6 +322,7 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
     <button class="prog-tab active" onclick="showProgSec('grafiek',this)">Grafiek</button>
     <button class="prog-tab" onclick="showProgSec('week',this)">Week</button>
     <button class="prog-tab" onclick="showProgSec('pr',this)">PR + 1RM</button>
+    <button class="prog-tab" onclick="showProgSec('snelheid',this)">Snelheid</button>
   </div>
   <div id="prog-grafiek" class="prog-sec active">
     <div class="chart-box">
@@ -359,10 +367,17 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
       </div>
       <div id="orm-result"></div>
     </div>
+  <div id="prog-snelheid" class="prog-sec">
+    <div class="chart-box" style="margin-bottom:10px">
+      <div class="chart-box-hdr" style="margin-bottom:6px">
+        <span class="chart-box-title">Progressiesnelheid</span>
+        <span style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">laatste 4 sessies</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.6">Stijgend = PR in laatste 2 sessies · Stagneert = 3+ sessies geen PR</div>
+      <div id="snelheid-list"></div>
+    </div>
   </div>
 </div>
-
-<!-- PARTNER TAB -->
 <div id="tab-partner" class="tab">
   <div id="partner-content">
     <div style="text-align:center;padding:40px 0;color:var(--text3);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px">Verbinden...</div>
@@ -517,7 +532,12 @@ function renderForm(){
     const isTimed=ex.reps.includes('s');const holdSec=isTimed?parseInt(ex.reps.replace('s','').split('-').pop())||30:0;
     const block=document.createElement('div');
     block.className='log-ex-block'+(ex.ssp?' ss-b':ex.ss?' ss-a':'');
-    block.innerHTML=`<div class="log-ex-hdr" oncontextmenu="return false" ontouchstart="startLongPress(event,${ei})" ontouchend="cancelLongPress()" ontouchmove="cancelLongPress()" onmousedown="startLongPress(event,${ei})" onmouseup="cancelLongPress()" onmouseleave="cancelLongPress()"><span class="log-ex-name">${ex.n}${ex.ss?`<span class="ss-tag">SS</span>`:ex.ssp?`<span class="ss-tag">^</span>`:''}</span><div class="log-ex-meta">${mk>0?`<span class="pr-badge">PR: ${mk}kg</span>`:''}<span class="log-ex-hint">${isTimed?`${holdSec}s houden`:hint}</span>${isTimed?`<button class="timer-btn" onclick="startTimer(${holdSec},'${ex.n.replace(/'/g,'')} hold')" title="Hold-timer">▶</button>`:''}</div></div><div class="sets-hdr"><span>#</span><span>${isTimed?'Sec.':'Reps'}</span><span>Kg</span><span style="font-size:9px;text-align:center;color:var(--accent)">DOEL</span><span>⏱</span><span></span></div>`;
+    // Stagnatie check
+    const exPts=history.filter(h=>h.exercises&&h.exercises.some(e=>e.n===ex.n)).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(-6).map(h=>{const e2=h.exercises.find(e=>e.n===ex.n);return e2?Math.max(...(e2.sets||[]).map(s=>parseFloat(s.kg)||0).filter(v=>v>0),0):0;}).filter(v=>v>0);
+    const globalMax2=exPts.length?Math.max(...exPts):0;
+    const nopr=exPts.length>=2?exPts.slice().reverse().findIndex(v=>v>=globalMax2):0;
+    const stagWarn=nopr>=3?`<span title="Geen PR in ${nopr} sessies" style="font-size:11px;margin-left:4px;opacity:0.7">⚠️</span>`:'';
+    block.innerHTML=`<div class="log-ex-hdr" oncontextmenu="return false" ontouchstart="startLongPress(event,${ei})" ontouchend="cancelLongPress()" ontouchmove="cancelLongPress()" onmousedown="startLongPress(event,${ei})" onmouseup="cancelLongPress()" onmouseleave="cancelLongPress()"><span class="log-ex-name">${ex.n}${ex.ss?`<span class="ss-tag">SS</span>`:ex.ssp?`<span class="ss-tag">^</span>`:''}${stagWarn}</span><div class="log-ex-meta">${mk>0?`<span class="pr-badge">PR: ${mk}kg</span>`:''}<span class="log-ex-hint">${isTimed?`${holdSec}s houden`:hint}</span>${isTimed?`<button class="timer-btn" onclick="startTimer(${holdSec},'${ex.n.replace(/'/g,'')} hold')" title="Hold-timer">▶</button>`:''}</div></div><div class="sets-hdr"><span>#</span><span>${isTimed?'Sec.':'Reps'}</span><span>Kg</span><span style="font-size:9px;text-align:center;color:var(--accent)">DOEL</span><span>⏱</span><span></span></div>`;
     for(let s=0;s<ex.s;s++){
       const sv=savedEx&&savedEx.sets[s]?savedEx.sets[s]:{reps:isTimed?String(holdSec):'',kg:ex.kg>0?(lk!==null?lk:ex.kg):'',done:false};
       const row=document.createElement('div');
@@ -730,7 +750,42 @@ function render1RM(){
   document.getElementById('orm-result').innerHTML=`<div style="text-align:center;padding:16px 0"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;font-family:'DM Mono',monospace">Geschatte 1RM</div><div style="font-size:42px;font-weight:300;letter-spacing:-2px;color:var(--accent);font-family:'DM Mono',monospace">${orm}<span style="font-size:18px"> kg</span></div><div style="font-size:10px;color:var(--text3);margin-top:6px;font-family:'DM Mono',monospace">Basis: ${br} reps @ ${bw} kg</div><div style="margin-top:14px;padding:10px 14px;background:var(--bg3);border-radius:var(--radius-sm);font-size:11px;color:var(--text2);font-family:'DM Mono',monospace">Dichtstbijzijnde dumbbell: <strong style="color:var(--accent)">${near} kg</strong><br><span style="color:var(--text3);font-size:10px">Epley formule — schatting</span></div></div>`;
 }
 
-function showProgSec(s,btn){document.querySelectorAll('.prog-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.prog-sec').forEach(x=>x.classList.remove('active'));document.getElementById('prog-'+s).classList.add('active');if(s==='week')renderWeek();if(s==='pr'){renderPRs();}}
+function renderSnelheid(){
+  const el=document.getElementById('snelheid-list');
+  if(!el)return;
+  const allEx=[];
+  DAYS.forEach(d=>d.exercises.forEach(e=>{if(!allEx.includes(e.n)&&e.kg>0)allEx.push(e.n);}));
+  if(!history.length){el.innerHTML='<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px 0">Log eerst een paar sessies</div>';return;}
+  const rows=allEx.map(name=>{
+    const pts=history
+      .filter(h=>h.exercises&&h.exercises.some(e=>e.n===name))
+      .sort((a,b)=>new Date(a.date)-new Date(b.date))
+      .slice(-6)
+      .map(h=>{const ex=h.exercises.find(e=>e.n===name);const maxKg=ex?Math.max(...(ex.sets||[]).map(s=>parseFloat(s.kg)||0).filter(v=>v>0),0):0;return{date:h.date,kg:maxKg};})
+      .filter(p=>p.kg>0);
+    if(pts.length<2)return null;
+    const last4=pts.slice(-4);
+    const recent=last4.slice(-2);
+    const prev=last4.slice(0,2);
+    const recentMax=Math.max(...recent.map(p=>p.kg));
+    const prevMax=prev.length?Math.max(...prev.map(p=>p.kg)):recentMax;
+    const latest=last4[last4.length-1].kg;
+    const allKgs=pts.map(p=>p.kg);
+    const globalMax=Math.max(...allKgs);
+    const revIdx=pts.slice().reverse().findIndex(p=>p.kg>=globalMax);
+    const noprSince=revIdx>=0?revIdx:pts.length;
+    let status,label,sub;
+    if(recentMax>prevMax){status='up';label='↑ Stijgend';sub=`+${Math.round((recentMax-prevMax)*10)/10}kg vs vorige sessies · nu ${latest}kg`;}
+    else if(noprSince>=3){status='stag';label='⚠ Stagneert';sub=`${noprSince} sessies geen PR · max ${globalMax}kg`;}
+    else{status='flat';label='→ Stabiel';sub=`Consistent op ${latest}kg`;}
+    return{name,status,label,sub};
+  }).filter(Boolean);
+  if(!rows.length){el.innerHTML='<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px 0">Nog niet genoeg data</div>';return;}
+  const order={stag:0,up:1,flat:2};
+  rows.sort((a,b)=>order[a.status]-order[b.status]);
+  el.innerHTML=rows.map(r=>`<div class="snelheid-row"><div><div class="snelheid-ex">${r.name}</div><div class="snelheid-sub">${r.sub}</div></div><div class="snelheid-badge sb-${r.status}">${r.label}</div></div>`).join('');
+}
+function showProgSec(s,btn){document.querySelectorAll('.prog-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.prog-sec').forEach(x=>x.classList.remove('active'));document.getElementById('prog-'+s).classList.add('active');if(s==='week')renderWeek();if(s==='pr'){renderPRs();}if(s==='snelheid')renderSnelheid();}
 
 // HISTORY
 function renderHistory(){
