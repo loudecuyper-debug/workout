@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Workout">
 <meta name="theme-color" content="#111110">
+<link rel="apple-touch-icon" href="icon.png">
 <title>Workout Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -485,7 +486,7 @@ const MILESTONES=[
   {weeks:26,emoji:'🌟',title:'Een half jaar!',msg:'26 weken op rij. Serieus niveau. Petje af.'}
 ];
 
-let curDay=0,logData={},history=[],strChart=null;
+let curDay=0,logData={},history=[],strChart=null,compleetFired=false;
 let timerIv=null,timerTotal=90,timerLeft=90,timerEndTime=null;
 
 function load(){
@@ -516,7 +517,7 @@ function showPlanSec(s,btn){document.querySelectorAll('.plan-tab-btn').forEach(b
 
 // LOG
 function renderPills(){document.getElementById('log-pills').innerHTML=DAYS.map((d,i)=>`<div class="day-pill ${curDay===i?'active':''}" onclick="selDay(${i})"><div class="dp-label">${d.short}</div><div class="dp-name">${d.tag}</div></div>`).join('');}
-function selDay(i){curDay=i;renderPills();renderForm();}
+function selDay(i){curDay=i;compleetFired=false;renderPills();renderForm();}
 function lastKg(n){for(let i=history.length-1;i>=0;i--){const e=history[i].exercises&&history[i].exercises.find(e=>e.n===n);if(e){const v=e.sets.map(s=>parseFloat(s.kg)).filter(v=>!isNaN(v)&&v>0);if(v.length)return Math.max(...v);}}return null;}
 function maxKg(n){let m=0;history.forEach(h=>{const e=h.exercises&&h.exercises.find(e=>e.n===n);if(e){const v=e.sets.map(s=>parseFloat(s.kg)).filter(v=>!isNaN(v)&&v>0);if(v.length)m=Math.max(m,...v);}});return m;}
 function lastReps(exName,setIdx){for(let i=history.length-1;i>=0;i--){const e=history[i].exercises&&history[i].exercises.find(e=>e.n===exName);if(e&&e.sets[setIdx]){const r=e.sets[setIdx].reps;if(r!==''&&r!==undefined)return r;}}return null;}
@@ -596,14 +597,19 @@ function togCheck(ei,si,btn){
   const isLastSet=si===day.exercises[ei].s-1;
   if(isLastEx&&isLastSet){
     // Laatste set van laatste oefening — geen timer, maar compleet!
-    setTimeout(()=>showCompleet(),300);
+    if(!compleetFired){compleetFired=true;setTimeout(()=>showCompleet(),300);}
   } else {
     startTimer(day.exercises[ei].rest,day.exercises[ei].n);
   }
 }
 
+function todayKeyStr(d){const x=d?new Date(d):new Date();return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');}
 function saveSession(){
   const exercises=logData[curDay]||[];
+  // Guard: voorkom dubbele save van dezelfde dag
+  const tk=todayKeyStr();
+  const already=history.some(h=>h.dayIndex===curDay&&todayKeyStr(h.date)===tk);
+  if(already&&!confirm('Deze workout is vandaag al opgeslagen.\n\nNog eens opslaan als extra sessie?'))return;
   // Waarschuwing bij overgeslagen oefeningen
   const skipped=DAYS[curDay].exercises.filter(ex=>!exercises.find(e=>e.n===ex.n)||exercises.find(e=>e.n===ex.n).sets.every(s=>s.reps===''||s.reps===undefined));
   if(skipped.length){
@@ -626,7 +632,7 @@ function saveSession(){
   checkMilestone(streak);
 }
 
-function clearLog(){if(confirm('Reps en vinkjes wissen? Gewicht blijft op de vorige sessie staan.')){delete logData[curDay];persist();renderForm();}}
+function clearLog(){if(confirm('Reps en vinkjes wissen? Gewicht blijft op de vorige sessie staan.')){delete logData[curDay];compleetFired=false;persist();renderForm();}}
 
 // TIMER
 function startTimer(secs,name){
@@ -655,9 +661,9 @@ function calcStreak(){if(!history.length)return 0;const c=weekCounts();const d=n
 function calcBest(){const c=weekCounts();const weeks=Object.keys(c).filter(k=>c[k]>=WEEK_TARGET).map(Number).sort((a,b)=>a-b);if(!weeks.length)return 0;let best=1,cur=1;for(let i=1;i<weeks.length;i++){if(Math.round((weeks[i]-weeks[i-1])/86400000)===7){cur++;best=Math.max(best,cur);}else cur=1;}return best;}
 
 function renderProgress(){
-  const now=new Date(),wk=new Date(now);wk.setDate(now.getDate()-now.getDay());
+  const wkTs=weekStart(new Date().toISOString());
   document.getElementById('m-sessions').textContent=history.length;
-  document.getElementById('m-week').textContent=history.filter(h=>new Date(h.date)>=wk).length;
+  document.getElementById('m-week').textContent=history.filter(h=>weekStart(h.date)===wkTs).length;
   document.getElementById('m-vol').textContent=Math.round(history.reduce((a,h)=>a+calcVol(h.exercises),0)).toLocaleString('nl-BE');
   document.getElementById('m-bstreak').textContent=calcBest();
   document.getElementById('streak-val').textContent=calcStreak();
@@ -718,13 +724,12 @@ function renderChart(){
 }
 
 function renderWeek(){
-  const now=new Date(),wk=new Date(now);wk.setDate(now.getDate()-now.getDay());
-  const wh=history.filter(h=>new Date(h.date)>=wk);
+  const wkTs=weekStart(new Date().toISOString());
+  const wh=history.filter(h=>weekStart(h.date)===wkTs);
   const wv=wh.reduce((a,h)=>a+calcVol(h.exercises),0);
   const ms={};
   wh.forEach(h=>{const d=DAYS[h.dayIndex];if(!d)return;Object.entries(d.muscles||{}).forEach(([m,s])=>{ms[m]=(ms[m]||0)+s;});});
   document.getElementById('wk-stats').innerHTML=`<div class="wk-stat"><div class="wk-stat-label">Sessies</div><div class="wk-stat-val" style="color:var(--accent)">${wh.length}<span style="font-size:14px;color:var(--text3)">/5</span></div></div><div class="wk-stat"><div class="wk-stat-label">Volume</div><div class="wk-stat-val" style="font-size:18px;font-family:'DM Mono',monospace">${Math.round(wv).toLocaleString('nl-BE')}<span style="font-size:11px;color:var(--text3)"> kg</span></div></div>`;
-  const mc={};
   const target=10;
   document.getElementById('muscle-bars').innerHTML=Object.entries(ms).filter(([,v])=>v>0).map(([m,v])=>{const pct=Math.min(v/target*100,100);return`<div class="mbar-wrap"><div class="mbar-label"><span style="color:var(--text2)">${m}</span><span style="color:var(--text3);font-family:'DM Mono',monospace">${v} sets</span></div><div class="mbar-bg"><div class="mbar-fill" style="width:${pct}%"></div></div></div>`}).join('')||'<div class="empty-prog">Nog geen workouts deze week</div>';
 }
@@ -792,7 +797,7 @@ function showProgSec(s,btn){document.querySelectorAll('.prog-tab').forEach(b=>b.
 function renderHistory(){
   const cont=document.getElementById('hist-list');
   if(!history.length){cont.innerHTML='<div class="empty-prog" style="margin-top:20px">Nog geen workouts gelogd</div>';return;}
-  const cols=['var(--accent)','var(--accent)','var(--accent)','var(--accent)'];
+  const cols=['var(--accent)','var(--accent)','var(--accent)','var(--accent)','var(--accent)'];
   cont.innerHTML=history.map((s,i)=>({...s,_i:i})).sort((a,b)=>new Date(b.date)-new Date(a.date)).map(s=>{
     const d=new Date(s.date);const vol=calcVol(s.exercises);const hasPR=s.prs&&s.prs.length>0;
     const exDetail=s.exercises?s.exercises.map(ex=>{
@@ -803,11 +808,11 @@ function renderHistory(){
   }).join('');
 }
 function toggleHiDetail(hdr){const detail=hdr.nextElementSibling;const chev=hdr.querySelector('.hi-chevron');detail.classList.toggle('open');chev.classList.toggle('open');}
-function deleteSession(i){if(confirm('Sessie verwijderen?')){history.splice(i,1);persist();renderHistory();}}
+function deleteSession(i){if(confirm('Sessie verwijderen?')){history.splice(i,1);persist();syncToFirebase();renderHistory();}}
 
 // HISTORY KALENDER
 let kalYear=new Date().getFullYear(),kalMonth=new Date().getMonth();
-const DAY_COLS=['var(--accent)','var(--accent)','var(--accent)','var(--accent)'];
+const DAY_COLS=['var(--accent)','var(--accent)','var(--accent)','var(--accent)','var(--accent)'];
 
 function showHistSec(sec,btn){
   document.querySelectorAll('#tab-history .plan-tab-btn').forEach(b=>b.classList.remove('active'));
@@ -838,8 +843,6 @@ function renderKalender(){
     const wEnd=new Date(probe);wEnd.setDate(wEnd.getDate()+6);
     let vol=0;
     history.forEach(h=>{const hd=new Date(h.date);if(hd>=wStart&&hd<=wEnd)vol+=calcVol(h.exercises);});
-    // Label: dag van maandag
-    const lbl=wStart.getMonth()===kalMonth?wStart.getDate():(wEnd.getMonth()===kalMonth?wEnd.getDate()+'':'');
     weeks.push({vol:Math.round(vol),lbl:wStart.toLocaleDateString('nl-BE',{day:'numeric',month:'short'})});
     probe.setDate(probe.getDate()+7);
   }
@@ -1009,9 +1012,9 @@ async function syncToFirebase(){
   try{
     const streak=calcStreak();
     const now=new Date();
-    const todayKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+    const todayKey=todayKeyStr(now);
     const lastSession=history.length?history[history.length-1]:null;
-    const thisWeek=history.filter(h=>{const d=new Date(h.date);const ws=weekStart(h.date);return ws===weekStart(now.toISOString());});
+    const thisWeek=history.filter(h=>weekStart(h.date)===weekStart(now.toISOString()));
     await fbDb.collection('users').doc(MY_ID).set({
       name:MY_NAME,
       streak:streak,
@@ -1043,6 +1046,49 @@ async function migrateToFirebase(){
   await syncToFirebase();
   btn.textContent='✓ Gesynchroniseerd';
   setTimeout(()=>{btn.textContent='Opnieuw synchroniseren';btn.disabled=false;},2000);
+}
+
+async function backupFull(){
+  if(!fbReady){showToast('Firebase nog niet klaar','red');return;}
+  const btn=document.getElementById('backup-btn');
+  if(btn){btn.textContent='Backup maken...';btn.disabled=true;}
+  try{
+    await fbDb.collection('users').doc(MY_ID).collection('backup').doc('full').set({
+      history:JSON.stringify(history),
+      logData:JSON.stringify(logData),
+      kgs:localStorage.getItem('wt_kgs')||'{}',
+      lastStreak:localStorage.getItem('wt_ls')||'0',
+      ts:new Date().toISOString(),
+      sessions:history.length
+    });
+    if(btn){btn.textContent='\u2713 Backup gemaakt ('+history.length+' sessies)';setTimeout(()=>{btn.textContent='\u2191 Volledige backup';btn.disabled=false;},2500);}
+    showToast('Volledige backup opgeslagen','green');
+  }catch(e){
+    console.log('Backup error:',e);
+    if(btn){btn.textContent='\u2191 Volledige backup';btn.disabled=false;}
+    showToast('Backup mislukt — check verbinding','red');
+  }
+}
+async function restoreFull(){
+  if(!fbReady){showToast('Firebase nog niet klaar','red');return;}
+  try{
+    const doc=await fbDb.collection('users').doc(MY_ID).collection('backup').doc('full').get();
+    if(!doc.exists){showToast('Geen backup gevonden','red');return;}
+    const d=doc.data();
+    const when=new Date(d.ts).toLocaleDateString('nl-BE',{day:'numeric',month:'short',year:'numeric'});
+    if(!confirm('Backup van '+when+' ('+(d.sessions||'?')+' sessies) terugzetten?\n\nDit overschrijft wat nu op dit toestel staat.'))return;
+    history=JSON.parse(d.history||'[]');
+    logData=JSON.parse(d.logData||'{}');
+    localStorage.setItem('wt_kgs',d.kgs||'{}');
+    localStorage.setItem('wt_ls',d.lastStreak||'0');
+    persist();
+    const kgs=JSON.parse(d.kgs||'{}');
+    DAYS.forEach(dy=>dy.exercises.forEach(e=>{if(kgs[e.n]!==undefined)e.kg=kgs[e.n];}));
+    renderPlanKracht();renderForm();
+    document.getElementById('streak-val').textContent=calcStreak();
+    renderPartnerTab();
+    showToast('\u2713 '+history.length+' sessies hersteld','green',3000);
+  }catch(e){console.log('Restore error:',e);showToast('Herstel mislukt — check verbinding','red');}
 }
 
 function renderPartnerTab(){
@@ -1136,6 +1182,11 @@ function renderPartnerTab(){
     <div style="margin-top:8px">
       <button id="migrate-btn" class="migrate-btn" onclick="migrateToFirebase()">↑ Mijn data synchroniseren</button>
       <div style="font-size:9px;color:var(--text3);font-family:DM Mono,monospace;letter-spacing:0.5px;text-align:center;margin-top:6px">Synchroniseer na elke workout om je data bij te werken</div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button id="backup-btn" class="migrate-btn" style="flex:1;opacity:0.85" onclick="backupFull()">↑ Volledige backup</button>
+        <button class="migrate-btn" style="flex:1;opacity:0.85" onclick="restoreFull()">↓ Herstel backup</button>
+      </div>
+      <div style="font-size:9px;color:var(--text3);font-family:DM Mono,monospace;letter-spacing:0.5px;text-align:center;margin-top:6px">Volledige historiek — gebruik bij icoon-wissel of nieuwe telefoon</div>
     </div>
   `;
 }
