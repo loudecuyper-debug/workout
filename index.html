@@ -50,7 +50,7 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
 .day-pill.active{background:var(--accent)}
 .dp-label{font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--text3);font-family:'DM Mono',monospace}
 .day-pill.active .dp-label{color:var(--accent-text)}
-.dp-name{font-size:8px;color:var(--text3);margin-top:2px;line-height:1.2}
+.dp-name{font-size:9px;color:var(--text3);margin-top:2px;line-height:1.2}
 .day-pill.active .dp-name{color:var(--accent-text);opacity:.7}
 .date-disp{font-size:10px;color:var(--text3);margin-bottom:14px;display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase}
 .log-ex-block{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden}
@@ -66,7 +66,7 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
 .set-row{display:grid;grid-template-columns:22px 1fr 1fr 40px 34px 34px;gap:6px;padding:8px 14px;border-top:1px solid var(--border);align-items:center}
 .set-row.done-row{background:rgba(200,241,53,0.04)}
 .set-num{font-size:10px;color:var(--text3);font-weight:600;font-family:'DM Mono',monospace}
-.set-inp{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 4px;font-size:15px;color:var(--text);width:100%;-webkit-appearance:none;appearance:none;text-align:center;font-family:'DM Mono',monospace}
+.set-inp{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 4px;font-size:16px;color:var(--text);width:100%;-webkit-appearance:none;appearance:none;text-align:center;font-family:'DM Mono',monospace}
 .set-inp:focus{outline:none;border-color:var(--accent)}
 .set-inp::placeholder{color:var(--text3)}
 .set-inp.done-inp{border-color:rgba(200,241,53,0.3);color:var(--accent)}
@@ -76,7 +76,7 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
 .check-btn.done svg{stroke:var(--accent-text)}
 .timer-btn{width:30px;height:30px;border-radius:4px;border:1px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text3)}
 .save-bar{position:sticky;bottom:90px;margin:16px 0 0;display:flex;gap:8px}
-.btn-save{flex:1;padding:14px;background:var(--accent);color:var(--accent-text);border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:2px;text-transform:uppercase}
+.btn-save{flex:1;padding:14px;box-shadow:0 0 24px rgba(200,241,53,0.15);background:var(--accent);color:var(--accent-text);border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:2px;text-transform:uppercase}
 .btn-save:active{opacity:.85}
 .btn-clear{padding:14px 16px;background:transparent;color:var(--text3);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:11px;cursor:pointer;font-family:'DM Mono',monospace}
 .timer-ov{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(16px)}
@@ -107,7 +107,7 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
 .metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
 .metric-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
 .metric-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;font-family:'DM Mono',monospace}
-.metric-val{font-size:24px;font-weight:700;letter-spacing:-1px;color:var(--text)}
+.metric-val{font-size:24px;font-weight:500;letter-spacing:-1px;color:var(--text);font-family:'DM Mono',monospace}
 .metric-sub{font-size:10px;color:var(--text3);margin-top:3px;font-family:'DM Mono',monospace}
 .chart-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
 .chart-box-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -142,7 +142,7 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
 .wk-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
 .wk-stat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:13px}
 .wk-stat-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:4px;font-family:'DM Mono',monospace}
-.wk-stat-val{font-size:22px;font-weight:700;letter-spacing:-0.5px}
+.wk-stat-val{font-size:22px;font-weight:500;letter-spacing:-0.5px;font-family:'DM Mono',monospace}
 .hi-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;overflow:hidden}
 .hi-item-hdr{padding:11px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
 .hi-day{font-size:12px;font-weight:700;margin-bottom:2px;text-transform:uppercase;letter-spacing:0.5px}
@@ -175,7 +175,7 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
 .vol-week-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
 .vol-week-bar{width:100%;background:var(--accent-dim);border-top:1px solid rgba(200,241,53,0.3);border-radius:0;transition:height .4s;min-height:2px}
 .vol-week-bar.cur{background:var(--accent)}
-.vol-week-label{font-size:8px;color:var(--text3);text-align:center;font-family:'DM Mono',monospace}
+.vol-week-label{font-size:9px;color:var(--text3);text-align:center;font-family:'DM Mono',monospace}
 .chart-sub-tabs{display:flex;gap:0;margin-bottom:12px;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
 .chart-sub-tab{flex:1;padding:5px 8px;border-radius:0;border:none;border-right:1px solid var(--border);background:transparent;cursor:pointer;font-size:9px;font-weight:700;color:var(--text3);transition:all .15s;letter-spacing:1px;text-transform:uppercase;font-family:'DM Mono',monospace;text-align:center}
 .chart-sub-tab:last-child{border-right:none}
@@ -196,7 +196,7 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
 .streak-compare{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:12px 14px;border-top:1px solid var(--border)}
 .streak-block{text-align:center;padding:8px;background:var(--bg3);border-radius:4px;border:1px solid var(--border)}
 .streak-num{font-size:24px;font-weight:700;letter-spacing:-1px;font-family:'DM Mono',monospace}
-.streak-lbl{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px;font-family:'DM Mono',monospace}
+.streak-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px;font-family:'DM Mono',monospace}
 .streak-vs{font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;text-align:center}
 .week-row{padding:10px 14px;border-top:1px solid var(--border)}
 .week-row-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;font-family:'DM Mono',monospace}
@@ -212,6 +212,27 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
 .sync-btn{width:100%;padding:10px;background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:var(--text3);cursor:pointer;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
 .sync-btn.syncing{color:var(--accent);border-color:rgba(200,241,53,0.3)}
 .migrate-btn{width:100%;padding:10px;background:var(--accent-dim);border:1px solid rgba(200,241,53,0.2);border-radius:var(--radius-sm);font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:var(--accent);cursor:pointer;letter-spacing:2px;text-transform:uppercase}
+@keyframes tabIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.tab.active{animation:tabIn .18s ease}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+.check-btn.pop{animation:pop .3s cubic-bezier(.2,.8,.3,1.2)}
+.btn-save:active,.t-btn:active,.modal-close:active,.check-btn:active{transform:scale(.96)}
+.day-pill:active,.plan-tab-btn:active,.prog-tab:active,.chart-sub-tab:active,.nav-item:active{opacity:.65}
+.log-ex-block.ex-done{border-color:rgba(200,241,53,0.22)}
+.log-ex-block.ex-done .log-ex-name{color:var(--text2)}
+@keyframes tpulse{50%{transform:scale(1.07)}}
+.timer-secs.urgent{animation:tpulse 1s ease infinite}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.dp-dot{width:4px;height:4px;border-radius:50%;background:var(--accent);margin:3px auto 0}
+.day-pill.active .dp-dot{background:var(--accent-text)}
+.ex-count{font-size:9px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text3);padding:2px 6px;border-radius:3px;border:1px solid var(--border);white-space:nowrap}
+.ex-count.full{color:var(--accent);border-color:rgba(200,241,53,0.25);background:var(--accent-dim)}
+.timer-mini{position:fixed;bottom:152px;left:50%;transform:translateX(-50%);z-index:400;display:flex;align-items:center;gap:9px;background:rgba(28,28,26,0.97);border:1px solid rgba(200,241,53,0.3);border-radius:6px;padding:9px 16px;cursor:pointer;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 4px 20px rgba(0,0,0,0.5);overflow:hidden}
+.timer-mini.hidden{display:none}
+.timer-mini-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;font-family:'DM Mono',monospace}
+.timer-mini-secs{font-family:'DM Mono',monospace;font-size:17px;font-weight:500;color:var(--accent);min-width:30px;text-align:center}
+.timer-mini-bar{position:absolute;left:0;bottom:0;height:2px;background:var(--accent);transition:width .5s linear}
+.t-min{background:transparent;color:var(--text3);border:1px solid var(--border)!important;margin-top:10px}
 </style>
 </head>
 <body>
@@ -220,7 +241,7 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
   <div class="header-top">
     <div>
       <h1>Workout</h1>
-      <div class="header-sub">Spiermassa &nbsp;·&nbsp; 5×/week &nbsp;·&nbsp; Dumbbells</div>
+      <div class="header-sub" id="header-sub">Spiermassa &nbsp;·&nbsp; 5×/week &nbsp;·&nbsp; Dumbbells</div>
     </div>
     <div class="streak-pill" onclick="showStreakModal()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
@@ -230,7 +251,7 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
 </div>
 
 <!-- TIMER OVERLAY -->
-<div class="timer-ov hidden" id="timer-ov">
+<div class="timer-ov hidden" id="timer-ov" onclick="if(event.target===this)timerMinimize()">
   <div class="timer-lbl">Rust</div>
   <div class="timer-circle">
     <svg width="190" height="190" viewBox="0 0 190 190">
@@ -247,6 +268,14 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
     <button class="t-btn t-skip" onclick="timerClose()">Skip</button>
     <button class="t-btn t-done" onclick="timerClose()">Klaar</button>
   </div>
+  <button class="t-btn t-min" onclick="timerMinimize()">&darr; Verklein &mdash; vul alvast je reps in</button>
+</div>
+
+<!-- TIMER MINI PILL -->
+<div class="timer-mini hidden" id="timer-mini" onclick="timerExpand()">
+  <span class="timer-mini-lbl">Rust</span>
+  <span class="timer-mini-secs" id="timer-mini-secs">90</span>
+  <div class="timer-mini-bar" id="timer-mini-bar" style="width:100%"></div>
 </div>
 
 <!-- STREAK MODAL -->
@@ -306,7 +335,7 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
   </div>
   <div id="log-form"></div>
   <div class="save-bar">
-    <button class="btn-save" onclick="saveSession()">Workout opslaan</button>
+    <button class="btn-save" onclick="saveSession()">Workout opslaan<span id="save-count"></span></button>
     <button class="btn-clear" onclick="clearLog()">Wis</button>
   </div>
 </div>
@@ -368,6 +397,7 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
       </div>
       <div id="orm-result"></div>
     </div>
+  </div>
   <div id="prog-snelheid" class="prog-sec">
     <div class="chart-box" style="margin-bottom:10px">
       <div class="chart-box-hdr" style="margin-bottom:6px">
@@ -378,7 +408,6 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
       <div id="snelheid-list"></div>
     </div>
   </div>
-</div>
 </div>
 <div id="tab-partner" class="tab">
   <div id="partner-content">
@@ -516,7 +545,8 @@ function renderPlanWeek(){
 function showPlanSec(s,btn){document.querySelectorAll('.plan-tab-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('plan-kracht').style.display=s==='kracht'?'block':'none';document.getElementById('plan-week').style.display=s==='week'?'block':'none';}
 
 // LOG
-function renderPills(){document.getElementById('log-pills').innerHTML=DAYS.map((d,i)=>`<div class="day-pill ${curDay===i?'active':''}" onclick="selDay(${i})"><div class="dp-label">${d.short}</div><div class="dp-name">${d.tag}</div></div>`).join('');}
+function plannedDayIdx(){const m={1:0,2:1,3:2,4:2,5:3,6:3,0:4};return m[new Date().getDay()];}
+function renderPills(){const today=plannedDayIdx();document.getElementById('log-pills').innerHTML=DAYS.map((d,i)=>`<div class="day-pill ${curDay===i?'active':''}" onclick="selDay(${i})"><div class="dp-label">${d.short}</div><div class="dp-name">${d.tag}</div>${today===i?'<div class="dp-dot"></div>':''}</div>`).join('');}
 function selDay(i){curDay=i;compleetFired=false;renderPills();renderForm();}
 function lastKg(n){for(let i=history.length-1;i>=0;i--){const e=history[i].exercises&&history[i].exercises.find(e=>e.n===n);if(e){const v=e.sets.map(s=>parseFloat(s.kg)).filter(v=>!isNaN(v)&&v>0);if(v.length)return Math.max(...v);}}return null;}
 function maxKg(n){let m=0;history.forEach(h=>{const e=h.exercises&&h.exercises.find(e=>e.n===n);if(e){const v=e.sets.map(s=>parseFloat(s.kg)).filter(v=>!isNaN(v)&&v>0);if(v.length)m=Math.max(m,...v);}});return m;}
@@ -539,7 +569,7 @@ function renderForm(){
     const globalMax2=exPts.length?Math.max(...exPts):0;
     const nopr=exPts.length>=2?exPts.slice().reverse().findIndex(v=>v>=globalMax2):0;
     const stagWarn=nopr>=3?`<span title="Geen PR in ${nopr} sessies" style="font-size:11px;margin-left:4px;opacity:0.7">⚠️</span>`:'';
-    block.innerHTML=`<div class="log-ex-hdr" oncontextmenu="return false" ontouchstart="startLongPress(event,${ei})" ontouchend="cancelLongPress()" ontouchmove="cancelLongPress()" onmousedown="startLongPress(event,${ei})" onmouseup="cancelLongPress()" onmouseleave="cancelLongPress()"><span class="log-ex-name">${ex.n}${ex.ss?`<span class="ss-tag">SS</span>`:ex.ssp?`<span class="ss-tag">^</span>`:''}${stagWarn}</span><div class="log-ex-meta">${mk>0?`<span class="pr-badge">PR: ${mk}kg</span>`:''}<span class="log-ex-hint">${isTimed?`${holdSec}s houden`:hint}</span>${isTimed?`<button class="timer-btn" onclick="startTimer(${holdSec},'${ex.n.replace(/'/g,'')} hold')" title="Hold-timer">▶</button>`:''}</div></div><div class="sets-hdr"><span>#</span><span>${isTimed?'Sec.':'Reps'}</span><span>Kg</span><span style="font-size:9px;text-align:center;color:var(--accent)">DOEL</span><span>⏱</span><span></span></div>`;
+    block.innerHTML=`<div class="log-ex-hdr" oncontextmenu="return false" ontouchstart="startLongPress(event,${ei})" ontouchend="cancelLongPress()" ontouchmove="cancelLongPress()" onmousedown="startLongPress(event,${ei})" onmouseup="cancelLongPress()" onmouseleave="cancelLongPress()"><span class="log-ex-name">${ex.n}${ex.ss?`<span class="ss-tag">SS</span>`:ex.ssp?`<span class="ss-tag">^</span>`:''}${stagWarn}</span><div class="log-ex-meta"><span class="ex-count" id="exc-${ei}">0/${ex.s}</span>${mk>0?`<span class="pr-badge">PR: ${mk}kg</span>`:''}<span class="log-ex-hint">${isTimed?`${holdSec}s houden`:hint}</span>${isTimed?`<button class="timer-btn" onclick="startTimer(${holdSec},'${ex.n.replace(/'/g,'')} hold')" title="Hold-timer">▶</button>`:''}</div></div><div class="sets-hdr"><span>#</span><span>${isTimed?'Sec.':'Reps'}</span><span>Kg</span><span style="font-size:9px;text-align:center;color:var(--accent)">DOEL</span><span>⏱</span><span></span></div>`;
     for(let s=0;s<ex.s;s++){
       const sv=savedEx&&savedEx.sets[s]?savedEx.sets[s]:{reps:isTimed?String(holdSec):'',kg:ex.kg>0?(lk!==null?lk:ex.kg):'',done:false};
       const row=document.createElement('div');
@@ -551,6 +581,22 @@ row.innerHTML=`<span class="set-num">${s+1}</span><input class="set-inp${sv.done
     }
     form.appendChild(block);
   });
+  updProgress();
+}
+
+function updProgress(){
+  const day=DAYS[curDay];const saved=logData[curDay]||[];
+  let done=0,total=0;
+  day.exercises.forEach((ex,ei)=>{
+    total+=ex.s;
+    const se=saved.find(e=>e.n===ex.n);
+    const d=se?se.sets.filter(s=>s.done).length:0;
+    done+=d;
+    const el=document.getElementById(`exc-${ei}`);
+    if(el){el.textContent=`${d}/${ex.s}`;el.classList.toggle('full',d>=ex.s);const blk=el.closest('.log-ex-block');if(blk)blk.classList.toggle('ex-done',d>=ex.s);}
+  });
+  const sc=document.getElementById('save-count');
+  if(sc)sc.textContent=done>0?` · ${done}/${total}`:'';
 }
 
 function updSet(ei,si,inp,f){const e=ensureEntry(ei);let v=inp.value;if(f==='kg'){v=v.replace(',','.');inp.value=v;}e.sets[si][f]=v;persist();}
@@ -588,9 +634,11 @@ function saveKgEdit(){
 function togCheck(ei,si,btn){
   const e=ensureEntry(ei);e.sets[si].done=!e.sets[si].done;
   btn.classList.toggle('done',e.sets[si].done);
+  if(e.sets[si].done){btn.classList.add('pop');setTimeout(()=>btn.classList.remove('pop'),320);if(navigator.vibrate)navigator.vibrate(15);}
   const row=document.getElementById(`sr-${curDay}-${ei}-${si}`);
   if(row){row.classList.toggle('done-row',e.sets[si].done);row.querySelectorAll('.set-inp').forEach(inp=>inp.classList.toggle('done-inp',e.sets[si].done));}
   persist();
+  updProgress();
   if(!e.sets[si].done)return; // afvinken ongedaan gemaakt
   const day=DAYS[curDay];
   const isLastEx=ei===day.exercises.length-1;
@@ -635,22 +683,33 @@ function saveSession(){
 function clearLog(){if(confirm('Reps en vinkjes wissen? Gewicht blijft op de vorige sessie staan.')){delete logData[curDay];compleetFired=false;persist();renderForm();}}
 
 // TIMER
+function timerMinimize(){document.getElementById('timer-ov').classList.add('hidden');document.getElementById('timer-mini').classList.remove('hidden');}
+function timerExpand(){document.getElementById('timer-mini').classList.add('hidden');document.getElementById('timer-ov').classList.remove('hidden');}
+function timerHideAll(){document.getElementById('timer-ov').classList.add('hidden');document.getElementById('timer-mini').classList.add('hidden');}
 function startTimer(secs,name){
   if(timerIv){clearInterval(timerIv);timerIv=null;}
   timerTotal=secs;timerLeft=secs;timerEndTime=Date.now()+secs*1000;
   document.getElementById('timer-sub').textContent='Na: '+name;
-  document.getElementById('timer-ov').classList.remove('hidden');
+  const wasMin=!document.getElementById('timer-mini').classList.contains('hidden');
+  if(wasMin){document.getElementById('timer-mini').classList.remove('hidden');}
+  else{document.getElementById('timer-ov').classList.remove('hidden');}
   updTimer();
-  timerIv=setInterval(()=>{timerLeft=Math.max(0,Math.round((timerEndTime-Date.now())/1000));updTimer();if(timerLeft<=0){clearInterval(timerIv);timerIv=null;timerEndTime=null;if(navigator.vibrate)navigator.vibrate([200,100,200]);document.getElementById('timer-ov').classList.add('hidden');showToast('Rust voorbij!','green');}},500);
+  timerIv=setInterval(()=>{timerLeft=Math.max(0,Math.round((timerEndTime-Date.now())/1000));updTimer();if(timerLeft<=0){clearInterval(timerIv);timerIv=null;timerEndTime=null;if(navigator.vibrate)navigator.vibrate([200,100,200]);timerHideAll();showToast('Rust voorbij!','green');}},500);
 }
 function updTimer(){
   document.getElementById('timer-secs').textContent=timerLeft;
   const circ=521,pct=timerLeft/timerTotal;
   document.getElementById('tc-fg').style.strokeDashoffset=circ*(1-pct);
-  document.getElementById('tc-fg').style.stroke=pct>0.5?'#c8f135':pct>0.25?'#fbbf24':'#f87171';
+  const col=pct>0.5?'#c8f135':pct>0.25?'#fbbf24':'#f87171';
+  document.getElementById('tc-fg').style.stroke=col;
+  document.getElementById('timer-mini-secs').textContent=timerLeft;
+  document.getElementById('timer-mini-secs').style.color=col;
+  document.getElementById('timer-mini-bar').style.width=(pct*100)+'%';
+  document.getElementById('timer-mini-bar').style.background=col;
+  document.getElementById('timer-secs').classList.toggle('urgent',timerLeft<=10&&timerLeft>0);
 }
 function timerAdd(){timerLeft=Math.min(timerLeft+30,timerTotal+60);timerTotal=Math.max(timerTotal,timerLeft);timerEndTime=Date.now()+timerLeft*1000;updTimer();}
-function timerClose(){if(timerIv){clearInterval(timerIv);timerIv=null;}timerEndTime=null;document.getElementById('timer-ov').classList.add('hidden');}
+function timerClose(){if(timerIv){clearInterval(timerIv);timerIv=null;}timerEndTime=null;timerHideAll();}
 
 // PROGRESS
 function calcVol(ex){if(!ex)return 0;return ex.reduce((a,e)=>a+e.sets.reduce((b,s)=>b+(parseFloat(s.reps)||0)*(parseFloat(s.kg)||0),0),0);}
@@ -1192,13 +1251,21 @@ function renderPartnerTab(){
 }
 
 // INIT
+curDay=plannedDayIdx();
+(function(){
+  const now=new Date();
+  const dow=now.toLocaleDateString('nl-BE',{weekday:'short'}).replace('.','').toUpperCase();
+  const w=WEEK[(now.getDay()+6)%7];
+  const sub=w.type==='rust'?`${dow} · RUSTDAG · VOLGENDE: ${DAYS[plannedDayIdx()].short.toUpperCase()}`:`${dow} · VANDAAG: ${DAYS[plannedDayIdx()].short.toUpperCase()}`;
+  document.getElementById('header-sub').textContent=sub;
+})();
 renderPlanKracht();renderPlanWeek();renderPills();renderForm();
 document.getElementById('log-date').textContent=new Date().toLocaleDateString('nl-BE',{weekday:'long',day:'numeric',month:'long'});
 document.getElementById('streak-val').textContent=calcStreak();
 const cs=document.createElement('script');cs.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';document.head.appendChild(cs);
 // Firebase initialiseren
 initFirebase().then(()=>{listenPartner();syncToFirebase();}).catch(e=>console.log('Firebase init error:',e));
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&timerIv&&timerEndTime){timerLeft=Math.max(0,Math.round((timerEndTime-Date.now())/1000));updTimer();if(timerLeft<=0){clearInterval(timerIv);timerIv=null;timerEndTime=null;if(navigator.vibrate)navigator.vibrate([200,100,200]);document.getElementById('timer-ov').classList.add('hidden');showToast('Rust voorbij!','green');}}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&timerIv&&timerEndTime){timerLeft=Math.max(0,Math.round((timerEndTime-Date.now())/1000));updTimer();if(timerLeft<=0){clearInterval(timerIv);timerIv=null;timerEndTime=null;if(navigator.vibrate)navigator.vibrate([200,100,200]);timerHideAll();showToast('Rust voorbij!','green');}}});
 </script>
 </body>
 </html>
