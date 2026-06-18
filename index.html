@@ -243,9 +243,14 @@ body{font-family:'Outfit','DM Sans',-apple-system,BlinkMacSystemFont,system-ui,s
       <h1>Workout</h1>
       <div class="header-sub" id="header-sub">Spiermassa &nbsp;·&nbsp; 5×/week &nbsp;·&nbsp; Dumbbells</div>
     </div>
-    <div class="streak-pill" onclick="showStreakModal()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-      <span id="streak-val">0</span>&nbsp;weken
+    <div style="display:flex;align-items:center;gap:8px">
+      <button id="mute-btn" class="streak-pill" onclick="toggleMute()" aria-label="Geluid aan/uit" style="cursor:pointer">
+        <svg id="mute-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
+      </button>
+      <div class="streak-pill" onclick="showStreakModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        <span id="streak-val">0</span>&nbsp;weken
+      </div>
     </div>
   </div>
 </div>
@@ -516,6 +521,49 @@ const MILESTONES=[
 ];
 
 let curDay=0,logData={},history=[],strChart=null,compleetFired=false;
+
+/* ===== SFX: gesynthetiseerde geluiden (A majeur, klik-vrij) ===== */
+const SFX=(()=>{
+  const AC=window.AudioContext||window.webkitAudioContext;
+  let ctx,master,muted=localStorage.getItem('wt_mute')==='1';
+  function ensure(){if(!ctx){ctx=new AC();master=ctx.createGain();master.gain.value=muted?0:0.9;master.connect(ctx.destination);}return ctx;}
+  function resume(){ensure();if(ctx.state!=='running')ctx.resume().catch(()=>{});}
+  ['touchend','mousedown','click','keydown'].forEach(ev=>document.addEventListener(ev,resume,{passive:true}));
+  const clamp=g=>Math.max(0.0001,g),cents=c=>(Math.random()*2-1)*c;
+  function tone(t0,freq,dur,o){o=o||{};const ty=o.type||'sine',gn=o.gain==null?0.3:o.gain,sl=o.slideTo||null,at=o.attack||0.004,dt=o.detune||0;
+    const osc=ctx.createOscillator(),g=ctx.createGain();osc.type=ty;osc.frequency.setValueAtTime(freq,t0);
+    if(sl)osc.frequency.exponentialRampToValueAtTime(Math.max(sl,1),t0+dur);
+    if(dt)osc.detune.setValueAtTime(dt,t0);
+    g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(clamp(gn),t0+at);g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    osc.connect(g).connect(master);osc.start(t0);osc.stop(t0+dur+0.03);}
+  function noise(t0,dur,o){o=o||{};const gn=o.gain==null?0.2:o.gain,lp=o.lp||2600,hp=o.hp||0;
+    const len=Math.max(1,Math.ceil(ctx.sampleRate*dur)),buf=ctx.createBuffer(1,len,ctx.sampleRate),d=buf.getChannelData(0);
+    for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);
+    const src=ctx.createBufferSource();src.buffer=buf;let node=src;
+    const lpf=ctx.createBiquadFilter();lpf.type='lowpass';lpf.frequency.value=lp;node.connect(lpf);node=lpf;
+    if(hp){const hpf=ctx.createBiquadFilter();hpf.type='highpass';hpf.frequency.value=hp;node.connect(hpf);node=hpf;}
+    const g=ctx.createGain();g.gain.setValueAtTime(clamp(gn),t0);g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    node.connect(g).connect(master);src.start(t0);src.stop(t0+dur+0.02);}
+  function bell(t0,f,o){o=o||{};const gn=o.gain==null?0.3:o.gain,dur=o.dur||0.5;tone(t0,f,dur,{type:'sine',gain:gn,attack:0.004});tone(t0,f*2,dur*0.7,{type:'sine',gain:gn*0.25,attack:0.004});}
+  const N={A3:220,Cs4:277.18,E4:329.63,A4:440,Cs5:554.37,E5:659.25,A5:880,Cs6:1108.73,E6:1318.51,A6:1760};
+  function chime(t){bell(t,N.E5,{gain:0.3,dur:0.4});bell(t+0.14,N.A5,{gain:0.3,dur:0.55});}
+  return {
+    set muted(v){muted=v;localStorage.setItem('wt_mute',v?'1':'0');if(master)master.gain.value=v?0:0.9;},
+    get muted(){return muted;},
+    tik(){resume();const t=ctx.currentTime;noise(t,0.012,{gain:0.13,lp:2600,hp:1100});tone(t,233,0.07,{gain:0.3,slideTo:150,detune:cents(25)});},
+    uncheck(){resume();const t=ctx.currentTime;tone(t,N.A4,0.07,{gain:0.2});tone(t+0.05,N.E4,0.12,{gain:0.2,slideTo:300});},
+    exerciseDone(){resume();const t=ctx.currentTime;tone(t,N.E5,0.13,{type:'triangle',gain:0.24});tone(t+0.1,N.A5,0.26,{type:'triangle',gain:0.26});tone(t+0.12,N.A6,0.22,{gain:0.06});},
+    save(){resume();const t=ctx.currentTime;tone(t,N.E4,0.07,{gain:0.22});tone(t+0.06,N.A4,0.12,{gain:0.24});},
+    countTick(n){resume();const t=ctx.currentTime,f=n===3?N.A4:n===2?N.Cs5:N.E5;tone(t,f,0.06,{type:'triangle',gain:0.18});},
+    timerDone(){resume();chime(ctx.currentTime);},
+    pr(){resume();const t=ctx.currentTime;tone(t,N.A4,0.1,{type:'triangle',gain:0.26});tone(t+0.08,N.Cs5,0.1,{type:'triangle',gain:0.27});tone(t+0.16,N.E5,0.1,{type:'triangle',gain:0.28});tone(t+0.26,N.A5,0.4,{type:'triangle',gain:0.3});tone(t+0.3,N.E6,0.4,{gain:0.12});tone(t+0.42,N.A6,0.5,{gain:0.1});},
+    workoutDone(){resume();const t=ctx.currentTime;[[N.A4,0],[N.Cs5,0.1],[N.E5,0.2],[N.A5,0.32]].forEach(p=>tone(t+p[1],p[0],0.42,{type:'triangle',gain:0.28,attack:0.005}));[N.A5,N.Cs6,N.E6].forEach(f=>tone(t+0.44,f,0.62,{type:'triangle',gain:0.16,attack:0.01}));tone(t+0.5,N.A6,0.5,{gain:0.12,attack:0.01});tone(t+0.66,2217,0.5,{gain:0.09,attack:0.01});}
+  };
+})();
+let _ctTick=null,_autoSave=false;
+function toggleMute(){SFX.muted=!SFX.muted;updMuteIco();if(!SFX.muted)SFX.tik();}
+function updMuteIco(){var b=document.getElementById('mute-btn'),i=document.getElementById('mute-ico');if(!i)return;i.innerHTML=SFX.muted?'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>':'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/>';if(b)b.style.opacity=SFX.muted?'0.55':'1';}
+
 let timerIv=null,timerTotal=90,timerLeft=90,timerEndTime=null;
 
 function load(){
@@ -639,7 +687,7 @@ function togCheck(ei,si,btn){
   if(row){row.classList.toggle('done-row',e.sets[si].done);row.querySelectorAll('.set-inp').forEach(inp=>inp.classList.toggle('done-inp',e.sets[si].done));}
   persist();
   updProgress();
-  if(!e.sets[si].done)return; // afvinken ongedaan gemaakt
+  if(!e.sets[si].done){SFX.uncheck();return;} // afvinken ongedaan gemaakt
   const day=DAYS[curDay];
   const isLastEx=ei===day.exercises.length-1;
   const isLastSet=si===day.exercises[ei].s-1;
@@ -647,12 +695,14 @@ function togCheck(ei,si,btn){
     // Laatste set van laatste oefening — geen timer, maar compleet!
     if(!compleetFired){compleetFired=true;setTimeout(()=>showCompleet(),300);}
   } else {
+    if(e.sets.every(s=>s.done))SFX.exerciseDone();else SFX.tik();
     startTimer(day.exercises[ei].rest,day.exercises[ei].n);
   }
 }
 
 function todayKeyStr(d){const x=d?new Date(d):new Date();return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');}
 function saveSession(){
+  const auto=_autoSave;_autoSave=false;
   const exercises=logData[curDay]||[];
   // Guard: voorkom dubbele save van dezelfde dag
   const tk=todayKeyStr();
@@ -675,6 +725,7 @@ function saveSession(){
   syncToFirebase(); // sync naar Firebase
   if(newPRs.length){showToast('🏆 PR! '+newPRs.join(', '),'pr',3500);}
   else showToast('Workout opgeslagen!','green');
+  if(!auto){if(newPRs.length)SFX.pr();else SFX.save();}
   const streak=calcStreak();
   document.getElementById('streak-val').textContent=streak;
   checkMilestone(streak);
@@ -688,13 +739,13 @@ function timerExpand(){document.getElementById('timer-mini').classList.add('hidd
 function timerHideAll(){document.getElementById('timer-ov').classList.add('hidden');document.getElementById('timer-mini').classList.add('hidden');}
 function startTimer(secs,name){
   if(timerIv){clearInterval(timerIv);timerIv=null;}
-  timerTotal=secs;timerLeft=secs;timerEndTime=Date.now()+secs*1000;
+  _ctTick=null;timerTotal=secs;timerLeft=secs;timerEndTime=Date.now()+secs*1000;
   document.getElementById('timer-sub').textContent='Na: '+name;
   const wasMin=!document.getElementById('timer-mini').classList.contains('hidden');
   if(wasMin){document.getElementById('timer-mini').classList.remove('hidden');}
   else{document.getElementById('timer-ov').classList.remove('hidden');}
   updTimer();
-  timerIv=setInterval(()=>{timerLeft=Math.max(0,Math.round((timerEndTime-Date.now())/1000));updTimer();if(timerLeft<=0){clearInterval(timerIv);timerIv=null;timerEndTime=null;if(navigator.vibrate)navigator.vibrate([200,100,200]);timerHideAll();showToast('Rust voorbij!','green');}},500);
+  timerIv=setInterval(()=>{timerLeft=Math.max(0,Math.round((timerEndTime-Date.now())/1000));updTimer();if(timerLeft<=3&&timerLeft>0&&timerLeft!==_ctTick){_ctTick=timerLeft;SFX.countTick(timerLeft);}if(timerLeft<=0){clearInterval(timerIv);timerIv=null;timerEndTime=null;if(navigator.vibrate)navigator.vibrate([200,100,200]);SFX.timerDone();timerHideAll();showToast('Rust voorbij!','green');}},500);
 }
 function updTimer(){
   document.getElementById('timer-secs').textContent=timerLeft;
@@ -986,7 +1037,7 @@ function checkMilestone(streak){
   const prev=parseInt(localStorage.getItem('wt_ls')||'0',10);
   if(streak>prev){
     const m=MILESTONES.find(m=>m.weeks===streak);
-    if(m)setTimeout(()=>{setModal(m.emoji,m.title,m.msg);document.getElementById('streak-modal').classList.remove('hidden');celebrate();},900);
+    if(m)setTimeout(()=>{setModal(m.emoji,m.title,m.msg);document.getElementById('streak-modal').classList.remove('hidden');SFX.pr();celebrate();},900);
   }
   localStorage.setItem('wt_ls',String(streak));
 }
@@ -1005,10 +1056,12 @@ function showCompleet(){
   document.getElementById('compleet-stats').innerHTML=`${totalSets} sets afgewerkt · ${vol > 0 ? vol.toLocaleString('nl-BE') + ' kg volume' : 'bodyweight'}`;
   document.getElementById('compleet-pr').innerHTML=newPRs.length?`<div style="padding:8px 12px;background:var(--accent-dim);border:1px solid rgba(200,241,53,0.2);border-radius:var(--radius-sm);font-size:12px;font-weight:700;color:var(--accent)">🏆 PR: ${newPRs.join(', ')}</div>`:'';
   document.getElementById('compleet-modal').classList.remove('hidden');
+  SFX.workoutDone();
   celebrate();
 }
 function closeCompleet(){
   document.getElementById('compleet-modal').classList.add('hidden');
+  _autoSave=true;
   saveSession();
 }
 
@@ -1265,7 +1318,8 @@ document.getElementById('streak-val').textContent=calcStreak();
 const cs=document.createElement('script');cs.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';document.head.appendChild(cs);
 // Firebase initialiseren
 initFirebase().then(()=>{listenPartner();syncToFirebase();}).catch(e=>console.log('Firebase init error:',e));
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&timerIv&&timerEndTime){timerLeft=Math.max(0,Math.round((timerEndTime-Date.now())/1000));updTimer();if(timerLeft<=0){clearInterval(timerIv);timerIv=null;timerEndTime=null;if(navigator.vibrate)navigator.vibrate([200,100,200]);timerHideAll();showToast('Rust voorbij!','green');}}});
+updMuteIco();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&timerIv&&timerEndTime){timerLeft=Math.max(0,Math.round((timerEndTime-Date.now())/1000));updTimer();if(timerLeft<=0){clearInterval(timerIv);timerIv=null;timerEndTime=null;if(navigator.vibrate)navigator.vibrate([200,100,200]);SFX.timerDone();timerHideAll();showToast('Rust voorbij!','green');}}});
 </script>
 </body>
 </html>
