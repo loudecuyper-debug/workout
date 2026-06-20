@@ -90,6 +90,8 @@ button{font-family:inherit}
 .set-in{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 4px;font-size:16px;color:var(--text);width:100%;-webkit-appearance:none;appearance:none;text-align:center;font-family:'DM Mono',monospace}
 .set-in:focus{outline:none;border-color:var(--accent);background:var(--bg)}
 .set-in.done-in{border-color:rgba(184,230,46,.3);color:var(--accent)}
+.reps-in::placeholder{color:var(--text3);opacity:.4;font-style:italic;font-weight:400}
+.reps-in::-webkit-input-placeholder{color:var(--text3);opacity:.4;font-style:italic}
 .set-goal{font-family:'DM Mono',monospace;font-size:9.5px;font-weight:500;color:var(--accent);text-align:center;align-self:center;opacity:.55}
 .mini-btn{background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text3);cursor:pointer;font-size:12px;width:30px;height:30px;display:flex;align-items:center;justify-content:center}
 .chk{width:30px;height:30px;border-radius:var(--radius-sm);border:1.5px solid var(--border2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
@@ -733,7 +735,7 @@ function renderForm(){
       row.className='set-row'+(sv.done?' done-row':'');
       row.id=`sr-${curDay}-${ei}-${s}`;
       const lr=lastReps(ex.n,s);
-      row.innerHTML=`<span class="set-n">${s+1}</span><input class="set-in${sv.done?' done-in':''}" type="number" inputmode="decimal" min="0" max="99" placeholder="${lr!==null?lr:'-'}" value="${sv.reps}" oninput="updSet(${ei},${s},this,'reps')"><input class="set-in${sv.done?' done-in':''}" type="text" inputmode="decimal" placeholder="-" value="${sv.kg}" oninput="updSet(${ei},${s},this,'kg')"><span class="set-goal">${ex.reps}</span><button class="mini-btn" onclick="startTimer(${ex.rest},'${ex.n.replace(/'/g,'')}')" title="Timer" aria-label="Start rusttimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg></button><button class="chk ${sv.done?'done':''}" onclick="togCheck(${ei},${s},this)" aria-label="afvinken"><svg viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></button>`;
+      row.innerHTML=`<span class="set-n">${s+1}</span><input class="set-in reps-in${sv.done?' done-in':''}" type="number" inputmode="decimal" min="0" max="99" placeholder="${lr!==null?lr:'-'}" value="${sv.reps}" oninput="updSet(${ei},${s},this,'reps')"><input class="set-in${sv.done?' done-in':''}" type="text" inputmode="decimal" placeholder="-" value="${sv.kg}" oninput="updSet(${ei},${s},this,'kg')"><span class="set-goal">${ex.reps}</span><button class="mini-btn" onclick="startTimer(${ex.rest},'${ex.n.replace(/'/g,'')}')" title="Timer" aria-label="Start rusttimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg></button><button class="chk ${sv.done?'done':''}" onclick="togCheck(${ei},${s},this)" aria-label="afvinken"><svg viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></button>`;
       block.appendChild(row);
     }
     form.appendChild(block);
