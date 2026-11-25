@@ -208,3 +208,29 @@ test('oude app- en testdata worden opgeruimd, andere apps niet', () => {
   assert.strictEqual(ls.getItem('wt_kgs'), null);
   assert.strictEqual(ls.getItem('budget_state'), 'blijft');
 });
+
+test('animaties: set-blokje springt, teller beweegt, timer schuift in, cijfers tellen op', () => {
+  const a = boot();
+  a.click('[data-act="start"]');
+  assert.ok(a.$('.in'), 'binnenkomst-animatie bij nieuw scherm');
+  a.click('[data-act="plus"]');
+  assert.ok(a.$('.counter .val b.bump-up'));
+  a.click('[data-act="setDone"]');
+  assert.ok(a.$('.sets .set.pop'), 'afgevinkte set springt');
+  assert.ok(a.$('#timer.slide'), 'rusttimer schuift in');
+  assert.ok(!a.$('.counter .val b.bump-up'), 'flash maar één keer');
+  a.click('[data-act="finish"]');
+  assert.ok(a.$('.h1.slam'));
+  assert.ok(a.$('[data-count]'));
+  assert.deepStrictEqual(a.errors, []);
+});
+
+test('animaties staan uit bij Beperk beweging', () => {
+  const dom = new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true, url: 'https://localhost/workout/', beforeParse(w) {
+    w.matchMedia = (q) => ({ matches: /reduce/.test(q), addListener() {}, removeListener() {} });
+    w.scrollTo = () => {};
+  } });
+  open.push(dom.window);
+  dom.window.document.querySelector('[data-act="start"]').click();
+  assert.strictEqual(dom.window.document.querySelector('.in'), null);
+});
