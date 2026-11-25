@@ -234,3 +234,20 @@ test('animaties staan uit bij Beperk beweging', () => {
   dom.window.document.querySelector('[data-act="start"]').click();
   assert.strictEqual(dom.window.document.querySelector('.in'), null);
 });
+
+test('kalender in Geschiedenis: workoutdagen gekleurd, tik opent sessie, vorige maand', () => {
+  const d = new Date(); const day = (n) => new Date(d.getFullYear(), d.getMonth(), n, 19).getTime();
+  const mk = (n, di, id) => ({ dayIndex: di, dayId: id, dayName: id, startedAt: day(n) - 3e6, endedAt: day(n), exercises: [{ id: 'goblet-squat', name: 'Goblet Squat', sets: [{ reps: 8, kg: 12, done: true }] }] });
+  const sessions = [mk(1, 0, 'push-a'), mk(Math.min(2, d.getDate()), 2, 'legs')];
+  const a = boot({ v: 2, kg: {}, active: null, lastExport: null, sessions });
+  a.click('[data-act="tab"][data-arg="history"]');
+  const hits = a.w.document.querySelectorAll('.cal .d.hit');
+  assert.ok(hits.length >= 1, 'workoutdagen zichtbaar');
+  assert.match(a.text(), /Week van/);
+  hits[0].click();
+  assert.ok(a.$('[aria-expanded="true"]'), 'sessie open na tik op dag');
+  assert.ok(a.$('[data-act="calMove"][data-arg="1"][disabled]'), 'niet naar de toekomst');
+  a.click('[data-act="calMove"][data-arg="-1"]');
+  assert.strictEqual(a.w.document.querySelectorAll('.cal .d.hit').length, 0, 'vorige maand leeg');
+  assert.deepStrictEqual(a.errors, []);
+});

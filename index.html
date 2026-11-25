@@ -94,6 +94,21 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outlin
 .timer .bar i{display:block;height:4px;border-radius:2px;background:var(--mc)}
 .timer button{height:48px;padding:0 14px;border-radius:12px;background:#2A3150;font-weight:600}
 .timer.over{border-color:var(--warn)}.timer.over .t{color:var(--warn)}
+/* kalender */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr)) 30px;gap:4px;text-align:center}
+.cal .dow{font-size:11px;font-weight:700;color:var(--ghost);padding-bottom:2px}
+.cal .d{aspect-ratio:1;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--cond);font-weight:700;font-size:16px;color:var(--muted);background:var(--card2);min-width:0}
+.cal .d.out{background:transparent;color:transparent}
+.cal .d.fut{background:transparent;color:var(--ghost)}
+.cal .d.hit{color:var(--accent-ink);background:var(--dc)}
+.cal .d.light{background:transparent;border:2px solid var(--dc);color:var(--dc)}
+.cal .d.today{box-shadow:inset 0 0 0 2px var(--text)}
+.cal .wk{display:flex;align-items:center;justify-content:center;font-family:var(--cond);font-weight:800;font-size:15px;color:var(--ghost)}
+.cal .wk.ok{color:var(--text)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.weekhead{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px;padding:0 4px}
+@media (prefers-reduced-motion:no-preference){.entering .cal .d.hit{animation:pop .4s var(--spring) both}}
 /* nav */
 .nav{position:fixed;left:0;right:0;bottom:0;background:rgba(15,19,34,.96);border-top:1px solid var(--line);padding:6px 8px calc(var(--sb) + 6px);z-index:5}
 .nav div{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -574,7 +589,7 @@ function firstOpenEx(d, from){
 
 /* ============ UI-STATE (niet bewaard) ============ */
 var ui = { view: 'tabs', tab: 'today', pickDay: Rules.nextDayIndex(S.sessions, PLAN.length), draftReps: null, touched: false,
-           openSession: null, progEx: null, progMetric: 'kg', summary: null, flash: {} };
+           openSession: null, calMonth: 0, progEx: null, progMetric: 'e1rm', summary: null, flash: {} };
 if (S.active) ui.view = 'workout';
 function resetDraft(){ ui.draftReps = null; ui.touched = false; }
 function ensureDraft(){
@@ -659,6 +674,12 @@ var actions = {
   doneOk: function(){ ui.view = 'tabs'; ui.tab = 'today'; render(); window.scrollTo(0, 0); },
   home: function(){ ui.view = 'tabs'; ui.tab = 'today'; render(); },
   resume: function(){ ui.view = 'workout'; wake.on(); render(); window.scrollTo(0, 0); },
+  calMove: function(d){ ui.calMonth = Math.min(0, ui.calMonth + (+d)); render(); },
+  calDay: function(i){
+    ui.openSession = +i; render();
+    var el = document.getElementById('sess-' + i);
+    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: motionOk ? 'smooth' : 'auto', block: 'start' });
+  },
   toggleSession: function(i){ ui.openSession = ui.openSession === +i ? null : +i; render(); },
   deleteSession: function(i){
     var s = S.sessions[+i]; if (!s) return;
@@ -740,7 +761,7 @@ document.addEventListener('visibilitychange', function(){
 /* ============ ANIMATIE-HULP: alleen bij een nieuw scherm, niet bij elke tik ============ */
 var lastScreen = null;
 var motionOk = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-function screenKey(){ return ui.view === 'tabs' ? 'tab:' + ui.tab : ui.view === 'workout' && S.active ? 'ex:' + S.active.exIdx : ui.view; }
+function screenKey(){ return ui.view === 'tabs' ? 'tab:' + ui.tab + (ui.tab === 'history' ? ':' + ui.calMonth : '') : ui.view === 'workout' && S.active ? 'ex:' + S.active.exIdx : ui.view; }
 function animateIn(el){
   var key = screenKey(), entering = key !== lastScreen;
   lastScreen = key;
@@ -917,14 +938,56 @@ function viewDone(){
   return h;
 }
 
+function dayColor(s){ var id = s.dayId || (PLAN[s.dayIndex] || {}).id || ''; return id.indexOf('push') === 0 ? 'var(--c-borst)' : id.indexOf('pull') === 0 ? 'var(--c-rug)' : 'var(--c-benen)'; }
+function calendar(){
+  var now = new Date(), base = new Date(now.getFullYear(), now.getMonth() + ui.calMonth, 1);
+  var y = base.getFullYear(), m = base.getMonth(), days = new Date(y, m + 1, 0).getDate();
+  var byDay = {};
+  S.sessions.forEach(function(s, i){ var d = new Date(s.endedAt); if (d.getFullYear() === y && d.getMonth() === m) byDay[d.getDate()] = i; });
+  var inMonth = Object.keys(byDay).length, sets = 0;
+  S.sessions.forEach(function(s){ var d = new Date(s.endedAt); if (d.getFullYear() === y && d.getMonth() === m) sets += s.exercises.reduce(function(a, e){ return a + e.sets.length; }, 0); });
+  var counts = {}; S.sessions.forEach(function(s){ var k = Rules.weekStart(s.endedAt); counts[k] = (counts[k] || 0) + 1; });
+  var title = base.toLocaleDateString('nl-BE', { month:'long', year:'numeric' });
+  var h = '<section class="card stack" style="gap:12px"><div class="between" style="align-items:center"><button class="icon-btn" data-act="calMove" data-arg="-1" aria-label="Vorige maand">' + ICON.back + '</button>';
+  h += '<div style="text-align:center"><div class="h2">' + esc(title) + '</div><div class="small muted">' + inMonth + ' workout' + (inMonth === 1 ? '' : 's') + ' · ' + sets + ' sets</div></div>';
+  h += '<button class="icon-btn" data-act="calMove" data-arg="1" aria-label="Volgende maand"' + (ui.calMonth >= 0 ? ' disabled style="opacity:.25;transform:scaleX(-1)"' : ' style="transform:scaleX(-1)"') + '>' + ICON.back + '</button></div>';
+  h += '<div class="cal" role="grid" aria-label="Workouts in ' + esc(title) + '">' + ['ma','di','wo','do','vr','za','zo'].map(function(d){ return '<div class="dow">' + d + '</div>'; }).join('') + '<div class="dow" title="workouts die week">#</div>';
+  var lead = (new Date(y, m, 1).getDay() + 6) % 7, cells = Math.ceil((lead + days) / 7) * 7;
+  var todayKey = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  for (var c = 0; c < cells; c++) {
+    var dn = c - lead + 1, date = new Date(y, m, dn);
+    if (dn < 1 || dn > days) h += '<div class="d out" aria-hidden="true"></div>';
+    else {
+      var si = byDay[dn], s = si != null ? S.sessions[si] : null, fut = date.getTime() > todayKey;
+      var cls = 'd' + (s ? (s.light ? ' light' : ' hit') : fut ? ' fut' : '') + (date.getTime() === todayKey ? ' today' : '');
+      var lbl = dn + ' ' + esc(title) + (s ? ': ' + esc(s.dayName || PLAN[s.dayIndex].name) : '');
+      h += s ? '<button class="' + cls + '" style="--dc:' + dayColor(s) + ';animation-delay:' + Math.min(dn, 31) * 12 + 'ms" data-act="calDay" data-arg="' + si + '" aria-label="' + lbl + '">' + dn + '</button>'
+             : '<div class="' + cls + '" aria-label="' + lbl + '">' + dn + '</div>';
+    }
+    if (c % 7 === 6) {
+      var ws = Rules.weekStart(new Date(y, m, c - lead + 1 - 6).getTime()), n = counts[ws] || 0;
+      h += '<div class="wk' + (n >= 3 ? ' ok' : '') + '" aria-label="' + n + ' workouts die week">' + (n || '') + '</div>';
+    }
+  }
+  h += '</div><div class="legend"><span><i style="background:var(--c-borst)"></i>Push</span><span><i style="background:var(--c-rug)"></i>Pull</span><span><i style="background:var(--c-benen)"></i>Benen</span><span><i style="border:2px solid var(--muted)"></i>lichte week</span></div></section>';
+  return h;
+}
+
 function viewHistory(){
   var h = '<div class="stack"><h1 class="h1">Geschiedenis</h1>';
-  if (!S.sessions.length) return h + '<div class="card muted">Nog geen workouts. Je eerste sessie verschijnt hier.</div></div>';
+  if (!S.sessions.length) return h + calendar() + '<div class="card muted">Nog geen workouts. Je eerste sessie verschijnt hier.</div></div>';
+  h += calendar();
+  var counts = {}; S.sessions.forEach(function(s){ var k = Rules.weekStart(s.endedAt); counts[k] = (counts[k] || 0) + 1; });
+  var lastWeek = null;
   for (var i = S.sessions.length - 1; i >= 0; i--) {
-    var s = S.sessions[i], open = ui.openSession === i;
+    var s = S.sessions[i], open = ui.openSession === i, wk = Rules.weekStart(s.endedAt);
+    if (wk !== lastWeek) {
+      lastWeek = wk;
+      h += '<div class="weekhead"><span class="eyebrow">Week van ' + esc(fmtDate(wk, { day:'numeric', month:'short' })) + '</span><span class="num" style="font-size:16px;color:' + (counts[wk] >= 3 ? 'var(--text)' : 'var(--muted)') + '">' + counts[wk] + ' / 5</span></div>';
+    }
     var sets = s.exercises.reduce(function(a, e){ return a + e.sets.length; }, 0);
     var mins = Math.max(1, Math.round((s.endedAt - s.startedAt) / 60000));
-    h += '<section class="card"><button style="width:100%;text-align:left" data-act="toggleSession" data-arg="' + i + '" aria-expanded="' + open + '"><div class="between"><span class="h2">' + esc(s.dayName || PLAN[s.dayIndex].name) + '</span><span class="small muted">' + esc(fmtDate(s.endedAt)) + '</span></div>';
+    h += '<section class="card" id="sess-' + i + '"><button style="width:100%;text-align:left" data-act="toggleSession" data-arg="' + i + '" aria-expanded="' + open + '"><div class="between"><span class="h2"><i aria-hidden="true" style="display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px;vertical-align:2px;background:' + dayColor(s) + '"></i>' + esc(s.dayName || PLAN[s.dayIndex].name) + '</span><span class="small muted">' + esc(fmtDate(s.endedAt)) + '</span></div>';
     h += '<div class="small muted" style="margin-top:2px">' + sets + (sets === 1 ? ' set · ' : ' sets · ') + mins + ' min' + (s.light ? ' · lichte week' : '') + (s.prs && s.prs.length ? ' · <span class="tag pr">' + s.prs.length + ' record' + (s.prs.length > 1 ? 's' : '') + '</span>' : '') + '</div></button>';
     if (open) {
       h += '<div class="list" style="margin-top:8px">' + s.exercises.map(function(e){
@@ -947,7 +1010,7 @@ function viewProgress(){
   h += '<label class="small muted" for="progSel">Oefening</label><select id="progSel" class="pick">' + ids.map(function(x){ return '<option value="' + esc(x) + '"' + (x === id ? ' selected' : '') + '>' + esc(exName(x)) + '</option>'; }).join('') + '</select>';
   var bestKg = ser.reduce(function(a, p){ return Math.max(a, p.kg); }, 0);
   var bestRm = ser.reduce(function(a, p){ return Math.max(a, p.e1rm); }, 0);
-  h += '<div class="row"><div class="card grow"><div class="big-num">' + (bestKg ? fmtKg(bestKg) : '–') + '<span class="small muted"> kg</span></div><div class="small muted">zwaarste set</div></div><div class="card grow"><div class="big-num">' + (bestRm ? fmtKg(Math.round(bestRm)) : '–') + '<span class="small muted"> kg</span></div><div class="small muted">geschat 1RM</div></div><div class="card grow"><div class="big-num">' + ser.length + '</div><div class="small muted">sessies</div></div></div>';
+  h += '<div class="row" style="align-items:stretch"><div class="card grow"><div class="big-num">' + (bestKg ? fmtKg(bestKg) : '–') + '<span class="small muted"> kg</span></div><div class="small muted">zwaarst</div></div><div class="card grow"><div class="big-num">' + (bestRm ? fmtKg(Math.round(bestRm)) : '–') + '<span class="small muted"> kg</span></div><div class="small muted">geschat 1RM</div></div><div class="card grow"><div class="big-num">' + ser.length + '</div><div class="small muted">sessies</div></div></div>';
   h += '<section class="card stack" style="gap:10px"><div class="between" style="align-items:center"><h2 class="h2">Per sessie</h2><div class="seg" role="group" aria-label="Meetwaarde">' + [['kg','kg'],['e1rm','1RM'],['vol','Volume']].map(function(m){ return '<button data-act="metric" data-arg="' + m[0] + '" class="' + (ui.progMetric === m[0] ? 'on' : '') + '" aria-pressed="' + (ui.progMetric === m[0]) + '">' + m[1] + '</button>'; }).join('') + '</div></div>';
   h += chart(ser, ui.progMetric) + '</section>';
   var rt = Rules.repsToNext(S.sessions, info, kg);
