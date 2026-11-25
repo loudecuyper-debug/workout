@@ -177,3 +177,12 @@ test('vergelijking: onvolledige workout telt alleen dezelfde sets', () => {
   assert.strictEqual(c.repsTo, 11);
   assert.strictEqual(c.better, true);
 });
+
+test('vermoeidheid: alleen bij twee keer op rij achteruit op hetzelfde gewicht', () => {
+  const e = ex({ id: 'x', reps: '6-10' });
+  const s = (reps, kg) => sess(0, [entry('x', [[reps, kg], [reps, kg]])]);
+  assert.strictEqual(R.fatigue([s(9, 12), s(8, 12), s(7, 12)], e, 12).to, 9.5);
+  assert.strictEqual(R.fatigue([s(9, 12), s(7, 12), s(8, 12)], e, 12), null, 'herstel = geen signaal');
+  assert.strictEqual(R.fatigue([s(9, 9.5), s(8, 12), s(7, 12)], e, 12), null, 'te weinig sessies op dit gewicht');
+  assert.strictEqual(R.fatigue([s(9, 12), s(8, 12), s(7, 12)], e, 12, true), null, 'niet in de lichte week');
+});

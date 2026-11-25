@@ -122,6 +122,7 @@ test('wisselen: Bicep Curl naar Concentration Curl, historiek per oefening', () 
   a.click('[data-act="start"]');
   for (let i = 0; i < 4; i++) a.click('[data-act="ex"][data-arg="1"]');
   assert.strictEqual(a.$('.h1').textContent, 'Bicep Curl');
+  a.click('[data-act="more"]');
   a.click('[data-act="swapOpen"]');
   a.click('[data-act="swapTo"][data-arg="conc-curl"]');
   assert.strictEqual(a.$('.h1').textContent, 'Concentration Curl');
@@ -250,4 +251,101 @@ test('kalender in Geschiedenis: workoutdagen gekleurd, tik opent sessie, vorige 
   a.click('[data-act="calMove"][data-arg="-1"]');
   assert.strictEqual(a.w.document.querySelectorAll('.cal .d.hit').length, 0, 'vorige maand leeg');
   assert.deepStrictEqual(a.errors, []);
+});
+
+const W2 = () => ({ v: 2, kg: {}, active: null, lastExport: null, sessions: [] });
+const sessAt = (ago, exs) => ({ dayIndex: 0, dayId: 'push-a', dayName: 'Push A', startedAt: Date.now() - ago * 86400000 - 3e6, endedAt: Date.now() - ago * 86400000, exercises: exs });
+
+test('set achteraf aanpassen en verwijderen in Geschiedenis', () => {
+  const s = W2(); s.sessions = [sessAt(1, [{ id: 'chest-press', name: 'Chest Press (vloer)', sets: [{ reps: 100, kg: 12, done: true }, { reps: 9, kg: 12, done: true }] }])];
+  const a = boot(s);
+  a.click('[data-act="tab"][data-arg="history"]');
+  a.click('[data-act="toggleSession"][data-arg="0"]');
+  a.click('[data-act="editSet"][data-arg="0"][data-arg2="0:0"]');
+  assert.strictEqual(a.$('.counter .val b').textContent, '100');
+  for (let i = 0; i < 90; i++) a.click('[data-act="editReps"][data-arg="-1"]');
+  a.click('[data-act="editKg"][data-arg="9.5"]');
+  a.click('[data-act="editSave"]');
+  assert.deepStrictEqual({ ...a.state().sessions[0].exercises[0].sets[0] }, { reps: 10, kg: 9.5, done: true });
+  a.click('[data-act="editSet"][data-arg="0"][data-arg2="0:1"]');
+  a.click('[data-act="editDelete"]');
+  assert.strictEqual(a.state().sessions[0].exercises[0].sets.length, 1);
+  assert.deepStrictEqual(a.errors, []);
+});
+
+test('extra set en extra oefening tijdens een workout', () => {
+  const a = boot();
+  a.click('[data-act="start"]');
+  a.click('[data-act="more"]');
+  a.click('[data-act="addSet"]');
+  assert.strictEqual(a.w.document.querySelectorAll('.sets .set').length, 5, 'Chest Press 4 -> 5 sets');
+  a.click('[data-act="more"]');
+  a.click('[data-act="addExOpen"]');
+  a.click('[data-act="addEx"][data-arg="lateral-raise"]');
+  assert.strictEqual(a.$('.h1').textContent, 'Lateral Raise');
+  assert.match(a.text(), /Oefening 7 \/ 7/);
+  a.click('[data-act="setDone"]');
+  const st = a.state().active;
+  assert.deepStrictEqual([...st.added], ['lateral-raise']);
+  assert.ok(st.exercises.find((e) => e.id === 'lateral-raise').sets[0].done);
+  const b = boot(a.state());
+  assert.strictEqual(b.$('.h1').textContent, 'Lateral Raise', 'overleeft herladen');
+  assert.deepStrictEqual(a.errors, []);
+});
+
+test('schema aanpassen in Instellingen werkt door in de workout', () => {
+  const a = boot();
+  a.click('[data-act="tab"][data-arg="settings"]');
+  a.click('[data-act="planOpen"]');
+  a.click('[data-act="planDay"][data-arg="0"]');
+  a.click('[data-act="planSets"][data-arg="0"][data-arg2="1"]');
+  a.click('[data-act="planReps"][data-arg="0"]');
+  a.click('[data-act="planRest"][data-arg="0"][data-arg2="15"]');
+  a.click('[data-act="planRemove"][data-arg="5"]');
+  a.click('[data-act="planAddOpen"]');
+  a.click('[data-act="planAdd"][data-arg="lateral-raise"]');
+  a.click('[data-act="planMove"][data-arg="5"][data-arg2="-1"]');
+  const p = a.state().plan[0].exercises;
+  assert.deepStrictEqual([p[0].sets, p[0].reps, p[0].rest], [5, '8-12', 105]);
+  assert.strictEqual(p.length, 6);
+  assert.strictEqual(p[4].id, 'lateral-raise');
+  assert.ok(!p.some((x) => x.id === 'diamond-pushup'));
+  a.click('[data-act="planBack"]'); a.click('[data-act="planBack"]');
+  a.click('[data-act="tab"][data-arg="today"]');
+  a.click('[data-act="start"]');
+  assert.strictEqual(a.w.document.querySelectorAll('.sets .set').length, 5);
+  const b = boot(a.state());
+  assert.ok(b.state().plan, 'eigen schema blijft bewaard');
+  b.w.eval('actions.finish()');
+  b.click('[data-act="tab"][data-arg="settings"]');
+  b.click('[data-act="planOpen"]');
+  b.click('[data-act="planReset"]');
+  assert.strictEqual(b.state().plan, null);
+  assert.deepStrictEqual(a.errors, []);
+});
+
+test('kapot eigen schema valt terug op standaard', () => {
+  const s = W2(); s.plan = [{ exercises: [{ id: 'bestaat-niet', sets: 3, reps: '8', kg: 1, rest: 60 }] }];
+  const a = boot(s);
+  assert.match(a.$('.h1').textContent, /Push A/);
+  assert.deepStrictEqual(a.errors, []);
+});
+
+test('vermoeidheid: twee keer op rij minder reps geeft voorstel om lichter te gaan', () => {
+  const e = (r) => [{ id: 'chest-press', name: 'Chest Press (vloer)', sets: [{ reps: r, kg: 12, done: true }, { reps: r, kg: 12, done: true }] }];
+  const s = W2(); s.sessions = [sessAt(9, e(9)), sessAt(5, e(8)), sessAt(1, e(7))];
+  const a = boot(s);
+  a.click('[data-act="pick"][data-arg="0"]');
+  a.click('[data-act="start"]');
+  assert.match(a.text(), /Even een stap terug/);
+  a.click('[data-act="applySuggest"]');
+  assert.strictEqual(a.state().kg['chest-press'], 9.5);
+});
+
+test('Vandaag: focus en details standaard ingeklapt', () => {
+  const a = boot();
+  assert.match(a.text(), /van 3 gehaald/);
+  assert.strictEqual(a.$('.goal'), null);
+  a.click('[data-act="fold"][data-arg="focus"]');
+  assert.strictEqual(a.w.document.querySelectorAll('.goal').length, 3);
 });
