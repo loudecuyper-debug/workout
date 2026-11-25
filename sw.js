@@ -1,6 +1,6 @@
 // Offline-first: eerst cache, op de achtergrond verversen.
-var CACHE = 'workout-v2-1';
-var CORE = ['./', './index.html', './manifest.json', './icon.png'];
+var CACHE = 'workout-v2-2';
+var CORE = ['./', './index.html', './manifest.json', './icon.png?v=2'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(CORE); }).then(function () { return self.skipWaiting(); }));
