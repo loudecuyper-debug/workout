@@ -106,7 +106,34 @@ select.pick{width:100%;height:52px;border-radius:14px;background:var(--card);bor
 .seg button.on{background:var(--card3);color:var(--text)}
 .toast{position:fixed;left:50%;top:calc(var(--st) + 12px);transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:20;max-width:90vw}
 .diag{font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;color:var(--muted);word-break:break-word}
-@media (prefers-reduced-motion:no-preference){.set,.ladder button,.daypick button{transition:background .15s,color .15s}}
+/* ============ ANIMATIES: alleen als iOS "Beperk beweging" uit staat ============ */
+@media (prefers-reduced-motion:no-preference){
+  :root{--ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.34,1.56,.64,1)}
+  .set,.ladder button,.daypick button,.seg button,.nav button{transition:background .18s,color .18s,border-color .18s}
+  button,.btn,.btn-big,.suggest{transition:transform .12s var(--ease),background .18s,opacity .18s}
+  button:active{transform:scale(.96)}
+  .btn-big:active,.suggest:active{transform:scale(.98)}
+  .in{animation:rise .34s var(--ease) both}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .set.pop{animation:pop .42s var(--spring)}
+  @keyframes pop{0%{transform:scale(.82)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+  .counter .val b.bump-up{animation:bumpUp .2s var(--ease)}
+  .counter .val b.bump-down{animation:bumpDown .2s var(--ease)}
+  @keyframes bumpUp{from{transform:translateY(8px) scale(.94);opacity:.6}to{transform:none;opacity:1}}
+  @keyframes bumpDown{from{transform:translateY(-8px) scale(.94);opacity:.6}to{transform:none;opacity:1}}
+  .timer.slide{animation:slideUp .32s var(--ease) both}
+  @keyframes slideUp{from{transform:translateY(120%)}to{transform:none}}
+  .timer.over{animation:glow 1.2s ease-in-out infinite}
+  @keyframes glow{50%{box-shadow:0 0 0 4px rgba(255,138,91,.25)}}
+  .entering .bars .track i{animation:grow .7s var(--ease) both;animation-delay:.15s;transform-origin:left}
+  @keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  .entering .seg6 span.now{animation:pop .5s var(--spring) .2s both}
+  .goal.done .box{animation:pop .4s var(--spring)}
+  .toast:not([hidden]){animation:drop .26s var(--ease)}
+  @keyframes drop{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translateX(-50%)}}
+  .h1.slam{animation:slam .5s var(--spring) both}
+  @keyframes slam{from{opacity:0;transform:scale(1.15)}to{opacity:1;transform:none}}
+}
 </style>
 </head>
 <body>
@@ -547,7 +574,7 @@ function firstOpenEx(d, from){
 
 /* ============ UI-STATE (niet bewaard) ============ */
 var ui = { view: 'tabs', tab: 'today', pickDay: Rules.nextDayIndex(S.sessions, PLAN.length), draftReps: null, touched: false,
-           openSession: null, progEx: null, progMetric: 'kg', summary: null };
+           openSession: null, progEx: null, progMetric: 'kg', summary: null, flash: {} };
 if (S.active) ui.view = 'workout';
 function resetDraft(){ ui.draftReps = null; ui.touched = false; }
 function ensureDraft(){
@@ -567,8 +594,8 @@ var actions = {
     S.active = { dayIndex: ui.pickDay, startedAt: Date.now(), exIdx: 0, exercises: [], restEndsAt: null, restTotal: 0, swaps: {}, light: light };
     resetDraft(); store.save(); ui.view = 'workout'; wake.on(); render(); window.scrollTo(0, 0);
   },
-  minus: function(){ ensureDraft(); ui.draftReps = Math.max(0, ui.draftReps - 1); ui.touched = true; render(); },
-  plus: function(){ ensureDraft(); ui.draftReps = ui.draftReps + 1; ui.touched = true; render(); },
+  minus: function(){ ensureDraft(); ui.draftReps = Math.max(0, ui.draftReps - 1); ui.touched = true; ui.flash.rep = 'down'; render(); },
+  plus: function(){ ensureDraft(); ui.draftReps = ui.draftReps + 1; ui.touched = true; ui.flash.rep = 'up'; render(); },
   kg: function(v){ var ex = curEx(); S.kg[ex.id] = +v; store.save(); render(); },
   setDone: function(){
     var d = activeDay(), ex = d.exercises[S.active.exIdx], e = activeEntry(ex);
@@ -576,6 +603,7 @@ var actions = {
     var idx = nextSetIdx(ex, e);
     if (idx === null) return;
     e.sets[idx] = { reps: ui.draftReps, kg: ex.kg, done: true };
+    ui.flash.set = { id: ex.id, idx: idx };
     var rest = Rules.restAfter(d, S.active.exIdx);
     var lastOfEx = nextSetIdx(ex, e) === null;
     if (ex.ss) {
@@ -588,6 +616,7 @@ var actions = {
     }
     S.active.restEndsAt = (rest > 0 && !Rules.isComplete(S.active, d)) ? Date.now() + rest * 1000 : null;
     S.active.restTotal = rest;
+    if (S.active.restEndsAt) ui.flash.timer = true;
     resetDraft(); store.save(); render();
   },
   undo: function(){
@@ -624,7 +653,7 @@ var actions = {
     ui.summary = buildSummary(before, session, d);
     S.sessions.push(session); S.active = null; store.save();
     ui.pickDay = Rules.nextDayIndex(S.sessions, PLAN.length);
-    ui.view = 'done'; wake.off(); render(); window.scrollTo(0, 0);
+    ui.view = 'done'; ui.flash.slam = true; wake.off(); render(); window.scrollTo(0, 0);
   },
   applySuggest: function(id, to){ S.kg[id] = +to; store.save(); toast(exName(id) + ' naar ' + fmtKg(+to) + ' kg'); render(); },
   doneOk: function(){ ui.view = 'tabs'; ui.tab = 'today'; render(); window.scrollTo(0, 0); },
@@ -708,6 +737,47 @@ document.addEventListener('visibilitychange', function(){
   if (document.visibilityState === 'visible') { if (S.active && ui.view === 'workout') wake.on(); render(); }
 });
 
+/* ============ ANIMATIE-HULP: alleen bij een nieuw scherm, niet bij elke tik ============ */
+var lastScreen = null;
+var motionOk = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+function screenKey(){ return ui.view === 'tabs' ? 'tab:' + ui.tab : ui.view === 'workout' && S.active ? 'ex:' + S.active.exIdx : ui.view; }
+function animateIn(el){
+  var key = screenKey(), entering = key !== lastScreen;
+  lastScreen = key;
+  el.classList.toggle('entering', entering);
+  if (entering && motionOk) {
+    var kids = el.children.length === 1 && el.firstElementChild.classList.contains('stack') ? el.firstElementChild.children : el.children;
+    for (var i = 0; i < kids.length; i++) {
+      if (kids[i].id === 'timer') continue;
+      kids[i].classList.add('in'); kids[i].style.animationDelay = Math.min(i, 8) * 35 + 'ms';
+    }
+    if (ui.view === 'done') countUp(el);
+  }
+  var f = ui.flash; ui.flash = {};
+  if (f.set) { var tiles = el.querySelectorAll('.sets .set'); if (tiles[f.set.idx] && curEx().id === f.set.id) tiles[f.set.idx].classList.add('pop'); }
+  if (f.rep) { var b = el.querySelector('.counter .val b'); if (b) b.classList.add('bump-' + f.rep); }
+  if (f.timer) { var t = el.querySelector('#timer'); if (t) t.classList.add('slide'); }
+  if (f.slam) { var h = el.querySelector('.h1'); if (h) h.classList.add('slam'); }
+}
+// Cijfers op het klaar-scherm tellen op van 0.
+function countUp(el){
+  var nodes = el.querySelectorAll('[data-count]');
+  if (!nodes.length || !window.requestAnimationFrame) return;
+  var t0 = null, dur = 650;
+  function step(ts){
+    if (t0 === null) t0 = ts;
+    var p = Math.min(1, (ts - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    nodes.forEach(function(n){
+      if (!n.isConnected) return;
+      var to = +n.dataset.count, v = Math.round(to * e);
+      n.textContent = (n.dataset.sign && v > 0 ? '+' : '') + v;
+    });
+    if (p < 1) requestAnimationFrame(step);
+  }
+  nodes.forEach(function(n){ n.textContent = '0'; });
+  requestAnimationFrame(step);
+}
+
 /* ============ RENDER ============ */
 function render(){
   var el = document.getElementById('app'), nav = document.getElementById('nav');
@@ -717,6 +787,7 @@ function render(){
   else if (ui.view === 'done') html = viewDone();
   else { ui.view = 'tabs'; html = ui.tab === 'history' ? viewHistory() : ui.tab === 'progress' ? viewProgress() : ui.tab === 'settings' ? viewSettings() : viewToday(); }
   el.innerHTML = html;
+  animateIn(el);
   el.style.setProperty('--mc', (ui.view === 'workout' || ui.view === 'swap') && S.active ? muscleVar(curEx().muscle) : 'var(--accent)');
   var showNav = ui.view === 'tabs';
   el.classList.toggle('has-nav', showNav);
@@ -829,9 +900,9 @@ function viewDone(){
   h += '<div><div class="eyebrow">' + esc(s.day) + ' · ' + s.mins + ' min</div><h1 class="h1">Klaar. ' + s.sets + ' / ' + s.planned + ' sets</h1>';
   h += '<div class="muted small" style="margin-top:6px">Week ' + s.streak.thisWeek + '/5 binnen · reeks: ' + s.streak.streak + ' ' + (s.streak.streak === 1 ? 'week' : 'weken') + '</div></div>';
   h += '<div class="row">';
-  h += '<div class="card grow"><div class="big-num" style="color:var(--accent)">' + (s.repsDiff === null ? '–' : (s.repsDiff > 0 ? '+' : '') + s.repsDiff) + '</div><div class="small muted">reps t.o.v. vorige keer (zelfde sets)</div></div>';
-  h += '<div class="card grow"><div class="big-num" style="color:var(--accent)">' + s.better.length + '</div><div class="small muted">oefeningen beter</div></div>';
-  h += '<div class="card grow"><div class="big-num">' + s.worse + '</div><div class="small muted">achteruit</div></div></div>';
+  h += '<div class="card grow"><div class="big-num" style="color:var(--accent)"' + (s.repsDiff === null ? '>–' : ' data-count="' + s.repsDiff + '" data-sign="1">' + (s.repsDiff > 0 ? '+' : '') + s.repsDiff) + '</div><div class="small muted">reps t.o.v. vorige keer (zelfde sets)</div></div>';
+  h += '<div class="card grow"><div class="big-num" style="color:var(--accent)" data-count="' + s.better.length + '">' + s.better.length + '</div><div class="small muted">oefeningen beter</div></div>';
+  h += '<div class="card grow"><div class="big-num" data-count="' + s.worse + '">' + s.worse + '</div><div class="small muted">achteruit</div></div></div>';
   if (s.prs.length) h += '<section class="card"><h2 class="h2" style="color:var(--info);margin-bottom:6px">Nieuw record</h2>' + s.prs.map(function(p){ return '<div class="between" style="padding:4px 0"><span>' + esc(p.name) + '</span><span class="num">' + fmtKg(p.kg) + ' kg</span></div>'; }).join('') + '</section>';
   if (s.better.length) h += '<section class="card list"><h2 class="h2" style="margin-bottom:4px">Wat beter ging</h2>' + s.better.map(function(b){
     var txt = b.kgTo > b.kgFrom ? fmtKg(b.kgFrom) + ' → ' + fmtKg(b.kgTo) + ' kg' : b.repsFrom + ' → ' + b.repsTo + ' reps';
@@ -959,6 +1030,12 @@ function onAct(ev){
   fn(b.dataset.arg, b.dataset.arg2);
 }
 document.getElementById('app').addEventListener('click', onAct);
+// Na de binnenkomst-animatie de klasse weghalen, anders blokkeert ze het indrukeffect van knoppen.
+document.getElementById('app').addEventListener('animationend', function(ev){
+  var c = ev.target.classList;
+  if (c.contains('in')) { c.remove('in'); ev.target.style.animationDelay = ''; }
+  c.remove('pop', 'bump-up', 'bump-down', 'slam');
+});
 document.getElementById('nav').addEventListener('click', onAct);
 document.getElementById('app').addEventListener('change', function(ev){
   if (ev.target.id === 'progSel') { ui.progEx = ev.target.value; render(); }
