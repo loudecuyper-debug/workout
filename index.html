@@ -435,6 +435,8 @@ var EX = {
   'hip-thrust':    { name:'Hip Thrust', muscle:'Benen' },
   'lunge':         { name:'DB Lunge', muscle:'Benen' },
   'calf-raise':    { name:'Calf Raise', muscle:'Benen' },
+  'calf-single':   { name:'Calf Raise op één been (trede)', muscle:'Benen' },
+  'nordic':        { name:'Nordic Curl (alleen naar beneden)', muscle:'Benen' },
   'plank':         { name:'Plank', muscle:'Core' },
   'dead-bug':      { name:'Dead Bug', muscle:'Core' },
   'russian-twist': { name:'Russian Twist (DB)', muscle:'Core' }
@@ -447,7 +449,7 @@ var ALT = {
   'chest-press':['incline-press'], 'incline-press':['chest-press'], 'db-flye':['chest-press'],
   'bent-row':['sa-row'], 'sa-row':['bent-row'], 'pullover':['reverse-fly'], 'reverse-fly':['pullover'],
   'goblet-squat':['bulgarian','lunge'], 'rdl':['hip-thrust'], 'bulgarian':['lunge','goblet-squat'], 'lunge':['bulgarian'],
-  'hip-thrust':['rdl'], 'calf-raise':[], 'plank':['dead-bug'], 'dead-bug':['plank'], 'russian-twist':['plank']
+  'hip-thrust':['rdl'], 'calf-raise':['calf-single'], 'calf-single':['calf-raise'], 'nordic':['rdl'], 'plank':['dead-bug'], 'dead-bug':['plank'], 'russian-twist':['plank']
 };
 var MUSCLES = ['Borst','Rug','Benen','Schouders','Armen','Core'];
 function muscleVar(m){ return m ? 'var(--c-' + m.toLowerCase() + ')' : 'var(--text)'; }
@@ -457,6 +459,7 @@ var DEFAULT_PLAN = [
     {id:'incline-press', sets:3, reps:'6-10', kg:9.5, rest:90},
     {id:'db-flye', sets:3, reps:'10-12', kg:9.5, rest:60},
     {id:'ohp', sets:3, reps:'6-10', kg:12, rest:90},
+    {id:'lateral-raise', sets:3, reps:'12-15', kg:7, rest:60},
     {id:'kickback', sets:3, reps:'10-12', kg:7, rest:60},
     {id:'diamond-pushup', sets:3, reps:'max', kg:0, rest:60}
   ]},
@@ -468,13 +471,12 @@ var DEFAULT_PLAN = [
     {id:'bicep-curl', sets:3, reps:'10-12', kg:9.5, rest:60, ss:'hammer-curl'},
     {id:'hammer-curl', sets:3, reps:'10-12', kg:9.5, rest:90}
   ]},
-  { id:'legs', name:'Benen', title:'Benen & Billen', exercises:[
-    {id:'goblet-squat', sets:4, reps:'6-10', kg:12, rest:90},
-    {id:'rdl', sets:4, reps:'6-10', kg:12, rest:90},
+  // Louis loopt: benen kort en gericht op kracht en blessurepreventie (nov 2026). Niet de dag voor een zware loop.
+  { id:'legs', name:'Benen', title:'Kracht voor lopers', exercises:[
+    {id:'rdl', sets:3, reps:'8-12', kg:12, rest:90},
     {id:'bulgarian', sets:3, reps:'8/been', kg:4.5, rest:90},
-    {id:'hip-thrust', sets:3, reps:'10-12', kg:12, rest:60},
-    {id:'lunge', sets:3, reps:'10/been', kg:7, rest:60},
-    {id:'calf-raise', sets:4, reps:'20', kg:0, rest:45}
+    {id:'nordic', sets:3, reps:'4-8', kg:0, rest:120},
+    {id:'calf-single', sets:3, reps:'12-15', kg:0, rest:45}
   ]},
   { id:'push-b', name:'Push B', title:'Borst & Schouders', exercises:[
     {id:'chest-press', sets:4, reps:'6-10', kg:12, rest:90},
@@ -486,7 +488,7 @@ var DEFAULT_PLAN = [
   ]},
   { id:'pull-b', name:'Pull B', title:'Biceps & Upper Back', exercises:[
     {id:'sa-row', sets:4, reps:'6-10', kg:12, rest:90},
-    {id:'reverse-fly', sets:3, reps:'10-12', kg:9.5, rest:60},
+    {id:'reverse-fly', sets:4, reps:'12-15', kg:7, rest:60},
     {id:'pullover', sets:3, reps:'10-12', kg:9.5, rest:60},
     {id:'hammer-curl', sets:4, reps:'10-12', kg:9.5, rest:60},
     {id:'bicep-curl', sets:3, reps:'10-12', kg:9.5, rest:60},
@@ -496,9 +498,9 @@ var DEFAULT_PLAN = [
   ]}
 ];
 var PLAN = DEFAULT_PLAN;
-var REP_OPTIONS = ['6-10','8-12','10-12','12-15','15-20','20','max'];
+var REP_OPTIONS = ['4-8','6-10','8-12','10-12','12-15','15-20','20','max'];
 var ELBOW_TIP = 'Ellebogen: 3 seconden naar beneden, onderaan niet volledig strekken, geen swing.';
-var VERSION = '2.1.0';
+var VERSION = '2.2.0';
 
 /* ============ OPSLAG: één state-object, één migrate() voor laden en import ============ */
 var STORE_KEY = 'workout_v2';
