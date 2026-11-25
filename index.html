@@ -7,20 +7,22 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Workout">
-<meta name="theme-color" content="#050505">
+<meta name="theme-color" content="#0F1322">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon.png?v=2">
+<link rel="apple-touch-icon" href="icon.png?v=3">
 <title>Workout</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#050505;--card:#111110;--card2:#161614;--card3:#222220;--line:#2a2a26;
-  --text:#f5f5f0;--muted:#a3a39b;--ghost:#6f6f68;
-  --accent:#ffd60a;--accent-ink:#050505;--warn:#ff8a3d;--info:#5cc8ff;
+  --bg:#0F1322;--card:#191F33;--card2:#1F2640;--card3:#2A3150;--line:#2A3150;
+  --text:#EEF0F7;--muted:#9AA1B8;--ghost:#5D6580;
+  --accent:#EEF0F7;--accent-ink:#0F1322;--warn:#FF8A5B;--info:#FFC23D;
+  --mc:#EEF0F7; /* kleur van de spiergroep op het scherm */
+  --c-borst:#FF6B5B;--c-rug:#4D9DFF;--c-benen:#3DD68C;--c-schouders:#FFC23D;--c-armen:#B78CFF;--c-core:#3CCFCF;
   --r:18px;
-  --cond:'Barlow Condensed',system-ui,sans-serif;--body:'Barlow',system-ui,sans-serif;
+  --cond:'Big Shoulders Display',system-ui,sans-serif;--body:'Manrope',system-ui,sans-serif;
   --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -32,7 +34,7 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outlin
 .app{max-width:480px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;padding:calc(var(--st) + 16px) 20px calc(var(--sb) + 20px)}
 .app.has-nav{padding-bottom:calc(var(--sb) + 96px)}
 .eyebrow{font-family:var(--cond);font-weight:700;font-size:15px;letter-spacing:3px;color:var(--muted);text-transform:uppercase}
-.eyebrow.acc{color:var(--accent)}
+.eyebrow.acc{color:var(--mc)}
 .h1{font-family:var(--cond);font-weight:800;font-size:44px;line-height:.95;text-transform:uppercase}
 .h2{font-family:var(--cond);font-weight:800;font-size:20px;letter-spacing:1px;text-transform:uppercase}
 .muted{color:var(--muted)}.small{font-size:13px}
@@ -51,30 +53,30 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outlin
 .topbar{display:flex;align-items:center;justify-content:space-between;margin:-6px -10px 8px}
 .list .item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
 .list .item:last-child{border-bottom:0}
-.tag{font-size:12px;padding:2px 8px;border-radius:6px;background:#1d2a33;color:var(--info);white-space:nowrap}
-.tag.pr{background:#10262e}
+.tag{font-size:12px;padding:2px 8px;border-radius:6px;background:#232B45;color:var(--info);white-space:nowrap}
+.tag.pr{background:#2E2A2A}
 .daypick{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .daypick button{height:48px;border-radius:12px;background:var(--card2);font-family:var(--cond);font-weight:700;font-size:16px}
 .daypick button.on{background:var(--accent);color:var(--accent-ink)}
 .seg6{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
 .seg6 span{height:8px;border-radius:4px;background:var(--card3)}
 .seg6 span.past{background:var(--text)}.seg6 span.now{background:var(--accent)}
-.seg6 span.light{border:1px dashed #4a4a44}
+.seg6 span.light{border:1px dashed #3A4260}
 .bars{display:grid;grid-template-columns:84px minmax(0,1fr) 34px;gap:8px 10px;align-items:center;font-size:14px}
 .bars .track{height:8px;border-radius:4px;background:var(--card3);position:relative;overflow:hidden}
 .bars .track i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--text)}
-.bars .track i.ok{background:var(--accent)}
-.bars .track b{position:absolute;top:-2px;bottom:-2px;width:2px;background:#4a4a44}
+.bars .track i{opacity:.55}.bars .track i.ok{opacity:1}
+.bars .track b{position:absolute;top:-2px;bottom:-2px;width:2px;background:#3A4260}
 .goal{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:var(--card)}
-.goal .box{width:22px;height:22px;border-radius:6px;border:2px solid #4a4a44;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.goal .box{width:22px;height:22px;border-radius:6px;border:2px solid #3A4260;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .goal.done .box{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 /* workout */
 .sets{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:6px;margin-top:16px}
 .set{height:56px;border-radius:10px;background:var(--card2);color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center}
 .set b{font-family:var(--cond);font-weight:800;font-size:22px;line-height:1}
 .set span{font-size:11px;font-weight:600}
-.set.done{background:var(--accent);color:var(--accent-ink)}
-.set.cur{border:2px solid var(--accent);color:var(--accent)}
+.set.done{background:var(--mc);color:var(--accent-ink)}
+.set.cur{border:2px solid var(--mc);color:var(--mc)}
 .counter{display:flex;align-items:center;justify-content:space-between;margin:8px 0}
 .counter .pm{width:76px;height:76px;border-radius:22px;background:var(--card2);font-size:38px}
 .counter .val{display:flex;flex-direction:column;align-items:center}
@@ -86,14 +88,14 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outlin
 .tip{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:14px;background:var(--card);font-size:14px;line-height:1.4}
 .suggest{display:block;width:100%;text-align:left;background:var(--accent);color:var(--accent-ink);border-radius:var(--r);padding:12px 16px}
 .spacer{flex:1}
-.timer{position:fixed;left:12px;right:12px;bottom:calc(var(--sb) + 12px);max-width:456px;margin:0 auto;background:#1a1a17;border:1px solid var(--accent);border-radius:20px;padding:12px 12px 12px 18px;display:flex;align-items:center;gap:10px;z-index:10}
-.timer .t{font-family:var(--cond);font-weight:800;font-size:40px;color:var(--accent);line-height:1}
-.timer .bar{height:4px;border-radius:2px;background:#2b2b27;margin-top:6px}
-.timer .bar i{display:block;height:4px;border-radius:2px;background:var(--accent)}
-.timer button{height:48px;padding:0 14px;border-radius:12px;background:#2b2b27;font-weight:600}
+.timer{position:fixed;left:12px;right:12px;bottom:calc(var(--sb) + 12px);max-width:456px;margin:0 auto;background:#191F33;border:1px solid var(--mc);border-radius:20px;padding:12px 12px 12px 18px;display:flex;align-items:center;gap:10px;z-index:10}
+.timer .t{font-family:var(--cond);font-weight:800;font-size:40px;color:var(--mc);line-height:1}
+.timer .bar{height:4px;border-radius:2px;background:#2A3150;margin-top:6px}
+.timer .bar i{display:block;height:4px;border-radius:2px;background:var(--mc)}
+.timer button{height:48px;padding:0 14px;border-radius:12px;background:#2A3150;font-weight:600}
 .timer.over{border-color:var(--warn)}.timer.over .t{color:var(--warn)}
 /* nav */
-.nav{position:fixed;left:0;right:0;bottom:0;background:rgba(5,5,5,.96);border-top:1px solid var(--line);padding:6px 8px calc(var(--sb) + 6px);z-index:5}
+.nav{position:fixed;left:0;right:0;bottom:0;background:rgba(15,19,34,.96);border-top:1px solid var(--line);padding:6px 8px calc(var(--sb) + 6px);z-index:5}
 .nav div{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
 .nav button{min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--muted);font-size:11px;font-weight:600}
 .nav button.on{color:var(--accent)}
@@ -391,6 +393,7 @@ var ALT = {
   'hip-thrust':['rdl'], 'calf-raise':[], 'plank':['dead-bug'], 'dead-bug':['plank'], 'russian-twist':['plank']
 };
 var MUSCLES = ['Borst','Rug','Benen','Schouders','Armen','Core'];
+function muscleVar(m){ return m ? 'var(--c-' + m.toLowerCase() + ')' : 'var(--text)'; }
 var PLAN = [
   { id:'push-a', name:'Push A', title:'Borst & Triceps', exercises:[
     {id:'chest-press', sets:4, reps:'6-10', kg:12, rest:90},
@@ -714,6 +717,7 @@ function render(){
   else if (ui.view === 'done') html = viewDone();
   else { ui.view = 'tabs'; html = ui.tab === 'history' ? viewHistory() : ui.tab === 'progress' ? viewProgress() : ui.tab === 'settings' ? viewSettings() : viewToday(); }
   el.innerHTML = html;
+  el.style.setProperty('--mc', (ui.view === 'workout' || ui.view === 'swap') && S.active ? muscleVar(curEx().muscle) : 'var(--accent)');
   var showNav = ui.view === 'tabs';
   el.classList.toggle('has-nav', showNav);
   nav.hidden = !showNav;
@@ -747,7 +751,7 @@ function viewToday(){
   h += '<section class="card stack" style="gap:10px"><div class="between"><h2 class="h2">Sets per spiergroep</h2><span class="small muted">doel 10–20 per week</span></div><div class="bars">';
   MUSCLES.forEach(function(m){
     var n = ms[m] || 0, pct = Math.min(100, n / 20 * 100);
-    h += '<span>' + m + '</span><div class="track" role="img" aria-label="' + m + ': ' + n + ' sets"><i class="' + (n >= 10 ? 'ok' : '') + '" style="width:' + pct + '%"></i><b style="left:50%"></b></div><span class="num" style="text-align:right;font-size:18px">' + n + '</span>';
+    h += '<span>' + m + '</span><div class="track" role="img" aria-label="' + m + ': ' + n + ' sets"><i class="' + (n >= 10 ? 'ok' : '') + '" style="background:' + muscleVar(m) + ';width:' + pct + '%"></i><b style="left:50%"></b></div><span class="num" style="text-align:right;font-size:18px">' + n + '</span>';
   });
   h += '</div></section>';
 
@@ -774,7 +778,7 @@ function viewWorkout(){
   var anyDone = e.sets.some(function(s){ return s && s.done; });
   var h = '';
   h += '<div class="topbar"><button class="icon-btn" data-act="home" aria-label="Naar start (workout blijft lopen)">' + ICON.back + '</button><span class="eyebrow">' + esc(d.name) + ' · ' + mins + ' min' + (d.light ? ' · licht' : '') + '</span><button class="icon-btn" data-act="finish" style="padding:0 12px;color:var(--accent);font-weight:600">Klaar</button></div>';
-  h += '<div class="between"><div class="eyebrow acc">Oefening ' + (S.active.exIdx + 1) + ' / ' + d.exercises.length + (ex.ss ? ' · superset' : '') + '</div>';
+  h += '<div class="between"><div class="eyebrow acc">' + (ex.muscle ? '● ' + esc(ex.muscle) + ' · ' : '') + 'Oefening ' + (S.active.exIdx + 1) + ' / ' + d.exercises.length + (ex.ss ? ' · superset' : '') + '</div>';
   h += (anyDone ? '' : '<button class="icon-btn" data-act="swapOpen" aria-label="Oefening wisselen" style="background:var(--card2)">' + ICON.swap + '</button>') + '</div>';
   h += '<h1 class="h1">' + esc(ex.name) + '</h1>';
   h += '<div class="muted small" style="margin-top:4px">' + ex.sets + ' × ' + esc(ex.reps) + ' · rust ' + (ex.ss ? '0' : ex.rest) + ' s' + (ex.swapped ? ' · gewisseld' : '') + '</div>';
@@ -814,7 +818,7 @@ function viewSwap(){
   h += '<h1 class="h1">' + esc(ex.name) + '</h1><div class="muted small" style="margin:6px 0 14px">Geldt alleen voor deze workout. Je historiek blijft per oefening bewaard.</div>';
   h += '<div class="stack">' + opts.map(function(id){
     var info = EX[id] || {}, cur = id === ex.id;
-    return '<button class="btn" style="text-align:left;min-height:64px;' + (cur ? 'border:2px solid var(--accent)' : '') + '" data-act="swapTo" data-arg="' + esc(id) + '"><div class="between"><span>' + esc(info.name || id) + (id === ex.origId ? ' <span class="small muted">(schema)</span>' : '') + '</span>' + (info.elbow ? '<span class="tag">elleboog</span>' : '<span class="tag" style="background:#1f2a14;color:#c9e27a">ellebooglicht</span>') + '</div></button>';
+    return '<button class="btn" style="text-align:left;min-height:64px;' + (cur ? 'border:2px solid var(--accent)' : '') + '" data-act="swapTo" data-arg="' + esc(id) + '"><div class="between"><span>' + esc(info.name || id) + (id === ex.origId ? ' <span class="small muted">(schema)</span>' : '') + '</span>' + (info.elbow ? '<span class="tag">elleboog</span>' : '<span class="tag" style="background:#17302A;color:#3DD68C">ellebooglicht</span>') + '</div></button>';
   }).join('') + '</div>';
   return h;
 }
@@ -882,7 +886,7 @@ function viewProgress(){
     h += '<div class="small muted">' + (info.elbow ? 'Elleboogregel: je stijgt pas als je de top van de range twee sessies op rij haalt.' : 'Haal de top van de range op alle sets en de app stelt het volgende gewicht voor.') + '</div></section>';
   }
   h += '<section class="card"><h2 class="h2" style="margin-bottom:8px">Gewichtsladder</h2><div class="ladder" style="justify-content:flex-start">' + Rules.LADDER.map(function(x){
-    return '<span class="num" style="height:36px;padding:0 10px;border-radius:999px;display:inline-flex;align-items:center;' + (Math.abs(x - kg) < .01 ? 'background:var(--accent);color:var(--accent-ink)' : x < kg ? 'background:var(--card3)' : 'border:1px dashed #4a4a44;color:var(--muted)') + '">' + fmtKg(x) + '</span>';
+    return '<span class="num" style="height:36px;padding:0 10px;border-radius:999px;display:inline-flex;align-items:center;' + (Math.abs(x - kg) < .01 ? 'background:var(--accent);color:var(--accent-ink)' : x < kg ? 'background:var(--card3)' : 'border:1px dashed #3A4260;color:var(--muted)') + '">' + fmtKg(x) + '</span>';
   }).join('') + '</div></section>';
   var recent = [];
   for (var i = S.sessions.length - 1; i >= 0 && recent.length < 5; i--) (S.sessions[i].prs || []).forEach(function(p){ if (recent.length < 5) recent.push({ name:p.name, kg:p.kg, t:S.sessions[i].endedAt }); });
@@ -901,11 +905,11 @@ function chart(ser, metric){
   var path = pts.map(function(p, i){ return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p[metric]).toFixed(1); }).join(' ');
   var unit = metric === 'vol' ? 'kg·reps' : 'kg';
   var s = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + (metric === 'kg' ? 'Zwaarste set' : metric === 'e1rm' ? 'Geschat 1RM' : 'Volume') + ' per sessie, van ' + fmtKg(vals[0]) + ' naar ' + fmtKg(vals[vals.length - 1]) + ' ' + unit + '">';
-  [lo, (lo + hi) / 2, hi].forEach(function(v){ s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#222220"/><text x="0" y="' + (y(v) + 4) + '" fill="#a3a39b" font-size="11" font-family="Barlow Condensed">' + fmtKg(Math.round(v * 10) / 10) + '</text>'; });
-  s += '<text x="' + L + '" y="' + (H - 4) + '" fill="#a3a39b" font-size="11" font-family="Barlow">' + esc(fmtDate(pts[0].t, { day:'numeric', month:'short' })) + '</text>';
-  s += '<text x="' + (W - R) + '" y="' + (H - 4) + '" fill="#a3a39b" font-size="11" font-family="Barlow" text-anchor="end">' + esc(fmtDate(pts[pts.length - 1].t, { day:'numeric', month:'short' })) + '</text>';
-  s += '<path d="' + path + '" fill="none" stroke="#ffd60a" stroke-width="2.5" stroke-linejoin="round"/>';
-  pts.forEach(function(p, i){ s += p.pr ? '<circle cx="' + x(i) + '" cy="' + y(p[metric]) + '" r="6" fill="#5cc8ff" stroke="#111110" stroke-width="2"/>' : '<circle cx="' + x(i) + '" cy="' + y(p[metric]) + '" r="3.5" fill="#ffd60a"/>'; });
+  [lo, (lo + hi) / 2, hi].forEach(function(v){ s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#2A3150"/><text x="0" y="' + (y(v) + 4) + '" fill="#9AA1B8" font-size="11" font-family="Big Shoulders Display">' + fmtKg(Math.round(v * 10) / 10) + '</text>'; });
+  s += '<text x="' + L + '" y="' + (H - 4) + '" fill="#9AA1B8" font-size="11" font-family="Manrope">' + esc(fmtDate(pts[0].t, { day:'numeric', month:'short' })) + '</text>';
+  s += '<text x="' + (W - R) + '" y="' + (H - 4) + '" fill="#9AA1B8" font-size="11" font-family="Manrope" text-anchor="end">' + esc(fmtDate(pts[pts.length - 1].t, { day:'numeric', month:'short' })) + '</text>';
+  s += '<path d="' + path + '" fill="none" stroke="#EEF0F7" stroke-width="2.5" stroke-linejoin="round"/>';
+  pts.forEach(function(p, i){ s += p.pr ? '<circle cx="' + x(i) + '" cy="' + y(p[metric]) + '" r="6" fill="#FFC23D" stroke="#191F33" stroke-width="2"/>' : '<circle cx="' + x(i) + '" cy="' + y(p[metric]) + '" r="3.5" fill="#EEF0F7"/>'; });
   s += '</svg>';
   if (pts.some(function(p){ return p.pr; })) s += '<div class="small muted"><span style="color:var(--info)">●</span> nieuw record</div>';
   return s;
