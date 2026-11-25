@@ -94,6 +94,10 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outlin
 .timer .bar i{display:block;height:4px;border-radius:2px;background:var(--mc)}
 .timer button{height:48px;padding:0 14px;border-radius:12px;background:#2A3150;font-weight:600}
 .timer.over{border-color:var(--warn)}.timer.over .t{color:var(--warn)}
+.stepper{background:var(--card2);align-items:center;min-height:46px}.seg.stepper button{min-width:44px;height:40px;font-size:22px;color:var(--text)}
+.chip{min-height:34px;padding:0 10px;border-radius:9px;background:var(--card2);font-family:var(--cond);font-weight:700;font-size:16px}
+.fold{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left}
+.fold svg{transition:transform .2s}.fold[aria-expanded="true"] svg{transform:rotate(180deg)}
 /* kalender */
 .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr)) 30px;gap:4px;text-align:center}
 .cal .dow{font-size:11px;font-weight:700;color:var(--ghost);padding-bottom:2px}
@@ -385,7 +389,18 @@ var Rules = (function(){
     return null;
   }
 
-  return { LADDER: LADDER, parseRange: parseRange, nextStep: nextStep, prevStep: prevStep, ladderIndex: ladderIndex,
+  // Twee sessies op rij minder reps per set op hetzelfde gewicht: stel een stap lichter voor.
+  function fatigue(sessions, ex, kg, deload){
+    if (deload || !kg || !parseRange(ex.reps)) return null;
+    var lo = prevStep(kg); if (lo === null) return null;
+    var es = entriesFor(sessions, ex.id).slice(0, 3);
+    if (es.length < 3 || !es.every(function(e){ return topKg(e) === kg && doneSets(e).length; })) return null;
+    var avg = function(e){ return totalReps(e) / doneSets(e).length; };
+    if (avg(es[0]) < avg(es[1]) && avg(es[1]) < avg(es[2])) return { from: kg, to: lo, reason: 'Twee sessies op rij minder reps op ' + String(kg).replace('.', ',') + ' kg.' };
+    return null;
+  }
+
+  return { fatigue: fatigue, LADDER: LADDER, parseRange: parseRange, nextStep: nextStep, prevStep: prevStep, ladderIndex: ladderIndex,
            nextDayIndex: nextDayIndex, entriesFor: entriesFor, lastRepsFor: lastRepsFor, suggestion: suggestion,
            repsToNext: repsToNext, restAfter: restAfter, remaining: remaining, isComplete: isComplete, warmup: warmup,
            weekStart: weekStart, blockInfo: blockInfo, streakInfo: streakInfo, muscleSets: muscleSets,
@@ -436,7 +451,7 @@ var ALT = {
 };
 var MUSCLES = ['Borst','Rug','Benen','Schouders','Armen','Core'];
 function muscleVar(m){ return m ? 'var(--c-' + m.toLowerCase() + ')' : 'var(--text)'; }
-var PLAN = [
+var DEFAULT_PLAN = [
   { id:'push-a', name:'Push A', title:'Borst & Triceps', exercises:[
     {id:'chest-press', sets:4, reps:'6-10', kg:12, rest:90},
     {id:'incline-press', sets:3, reps:'6-10', kg:9.5, rest:90},
@@ -480,8 +495,10 @@ var PLAN = [
     {id:'russian-twist', sets:3, reps:'20', kg:7, rest:45}
   ]}
 ];
+var PLAN = DEFAULT_PLAN;
+var REP_OPTIONS = ['6-10','8-12','10-12','12-15','15-20','20','max'];
 var ELBOW_TIP = 'Ellebogen: 3 seconden naar beneden, onderaan niet volledig strekken, geen swing.';
-var VERSION = '2.0.0';
+var VERSION = '2.1.0';
 
 /* ============ OPSLAG: één state-object, één migrate() voor laden en import ============ */
 var STORE_KEY = 'workout_v2';
@@ -493,7 +510,15 @@ try {
 } catch(e){}
 var SCHEMA = 2;
 var memoryFallback = null, storageOk = true;
-function emptyState(){ return { v:SCHEMA, sessions:[], kg:{}, active:null, lastExport:null }; }
+function emptyState(){ return { v:SCHEMA, sessions:[], kg:{}, active:null, lastExport:null, plan:null }; }
+// Eigen schema: 5 dagen, elke oefening bestaat en heeft geldige sets/rust.
+function validPlan(p){
+  return Array.isArray(p) && p.length === DEFAULT_PLAN.length && p.every(function(d){
+    return d && Array.isArray(d.exercises) && d.exercises.length > 0 && d.exercises.every(function(x){
+      return x && EX[x.id] && x.sets >= 1 && x.sets <= 10 && typeof x.reps === 'string' && typeof x.kg === 'number' && x.rest >= 0;
+    });
+  });
+}
 function migrate(s){
   if (!s || typeof s !== 'object') return emptyState();
   var out = emptyState();
@@ -505,10 +530,13 @@ function migrate(s){
   var a = s.active;
   if (a && typeof a === 'object' && typeof a.dayIndex === 'number' && Array.isArray(a.exercises)) {
     a.swaps = a.swaps && typeof a.swaps === 'object' ? a.swaps : {};  // v1 -> v2
+    a.extra = a.extra && typeof a.extra === 'object' ? a.extra : {};
+    a.added = Array.isArray(a.added) ? a.added.filter(function(id){ return EX[id]; }) : [];
     if (typeof a.light !== 'boolean') a.light = false;
     out.active = a;
   }
   out.lastExport = s.lastExport || null;
+  out.plan = validPlan(s.plan) ? s.plan : null;
   return out;
 }
 var store = {
@@ -523,6 +551,8 @@ var store = {
   }
 };
 var S = store.load();
+function applyPlan(){ PLAN = S.plan || DEFAULT_PLAN; }
+applyPlan();
 
 /* ============ HELPERS ============ */
 function esc(v){ return String(v).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -545,6 +575,9 @@ function toast(msg){
   clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.hidden = true; }, 2500);
 }
 var ICON = {
+  plus:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+  chev:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>',
+  up:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>',
   back:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
   check:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   swap:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4L3 8l4 4M3 8h13M17 20l4-4-4-4M21 16H8"/></svg>',
@@ -555,13 +588,19 @@ var ICON = {
 };
 
 /* ============ DAG OPBOUWEN: plan + wissels + lichte week ============ */
-function buildDay(dayIndex, swaps, light){
+function defaultsFor(id){
+  for (var d = 0; d < PLAN.length; d++) for (var i = 0; i < PLAN[d].exercises.length; i++) if (PLAN[d].exercises[i].id === id) return PLAN[d].exercises[i];
+  for (d = 0; d < DEFAULT_PLAN.length; d++) for (i = 0; i < DEFAULT_PLAN[d].exercises.length; i++) if (DEFAULT_PLAN[d].exercises[i].id === id) return DEFAULT_PLAN[d].exercises[i];
+  return { id:id, sets:3, reps:'10-12', kg:7, rest:60 };
+}
+function buildDay(dayIndex, swaps, light, extra, added){
   var base = PLAN[dayIndex];
-  var list = base.exercises.map(function(p, slot){
+  var plan = base.exercises.concat((added || []).map(function(id){ var d = defaultsFor(id); return { id:id, sets:3, reps:d.reps, kg:d.kg, rest:d.rest, added:true }; }));
+  var list = plan.map(function(p, slot){
     var id = (swaps && swaps[slot]) || p.id;
     var info = EX[id] || {};
     return { slot: slot, id: id, origId: p.id, name: info.name || id, muscle: info.muscle, elbow: !!info.elbow,
-             sets: light ? Math.max(1, p.sets - 1) : p.sets, reps: p.reps, rest: p.rest,
+             sets: (light && !p.added ? Math.max(1, p.sets - 1) : p.sets) + ((extra && extra[slot]) || 0), reps: p.reps, rest: p.rest, added: !!p.added,
              kg: kgFor(id, id === p.id ? p.kg : kgFor(p.id, p.kg)), ssOrig: p.ss || null, swapped: id !== p.id };
   });
   list.forEach(function(ex){
@@ -571,7 +610,7 @@ function buildDay(dayIndex, swaps, light){
   });
   return { index: dayIndex, id: base.id, name: base.name, title: base.title, light: !!light, exercises: list };
 }
-function activeDay(){ return buildDay(S.active.dayIndex, S.active.swaps, S.active.light); }
+function activeDay(){ return buildDay(S.active.dayIndex, S.active.swaps, S.active.light, S.active.extra, S.active.added); }
 function activeEntry(ex){
   var e = S.active.exercises.find(function(x){ return x.id === ex.id; });
   if (!e) { e = { id:ex.id, name:ex.name, sets:[] }; S.active.exercises.push(e); }
@@ -589,7 +628,7 @@ function firstOpenEx(d, from){
 
 /* ============ UI-STATE (niet bewaard) ============ */
 var ui = { view: 'tabs', tab: 'today', pickDay: Rules.nextDayIndex(S.sessions, PLAN.length), draftReps: null, touched: false,
-           openSession: null, calMonth: 0, progEx: null, progMetric: 'e1rm', summary: null, flash: {} };
+           openSession: null, calMonth: 0, edit: null, fold: { focus: true, detail: true }, planDay: 0, progEx: null, progMetric: 'e1rm', summary: null, flash: {} };
 if (S.active) ui.view = 'workout';
 function resetDraft(){ ui.draftReps = null; ui.touched = false; }
 function ensureDraft(){
@@ -606,7 +645,7 @@ var actions = {
   pick: function(i){ ui.pickDay = +i; render(); },
   start: function(){
     var light = Rules.blockInfo(S.sessions, Date.now()).light;
-    S.active = { dayIndex: ui.pickDay, startedAt: Date.now(), exIdx: 0, exercises: [], restEndsAt: null, restTotal: 0, swaps: {}, light: light };
+    S.active = { dayIndex: ui.pickDay, startedAt: Date.now(), exIdx: 0, exercises: [], restEndsAt: null, restTotal: 0, swaps: {}, extra: {}, added: [], light: light };
     resetDraft(); store.save(); ui.view = 'workout'; wake.on(); render(); window.scrollTo(0, 0);
   },
   minus: function(){ ensureDraft(); ui.draftReps = Math.max(0, ui.draftReps - 1); ui.touched = true; ui.flash.rep = 'down'; render(); },
@@ -643,6 +682,18 @@ var actions = {
     var n = activeDay().exercises.length;
     S.active.exIdx = (S.active.exIdx + (+dir) + n) % n;
     resetDraft(); store.save(); render();
+  },
+  more: function(){ ui.view = 'more'; render(); },
+  addSet: function(){
+    var ex = curEx(); S.active.extra[ex.slot] = (S.active.extra[ex.slot] || 0) + 1;
+    resetDraft(); store.save(); ui.view = 'workout'; toast('Extra set bij ' + ex.name); render();
+  },
+  addExOpen: function(){ ui.view = 'addEx'; render(); },
+  addEx: function(id){
+    if (!EX[id]) return;
+    S.active.added.push(id);
+    S.active.exIdx = activeDay().exercises.length - 1;
+    resetDraft(); store.save(); ui.view = 'workout'; toast(exName(id) + ' toegevoegd'); render();
   },
   swapOpen: function(){ ui.view = 'swap'; render(); },
   swapTo: function(id){
@@ -681,6 +732,53 @@ var actions = {
     if (el && el.scrollIntoView) el.scrollIntoView({ behavior: motionOk ? 'smooth' : 'auto', block: 'start' });
   },
   toggleSession: function(i){ ui.openSession = ui.openSession === +i ? null : +i; render(); },
+  editSet: function(si, pos){
+    var p = String(pos).split(':'), s = S.sessions[+si]; if (!s) return;
+    var e = s.exercises[+p[0]], x = e && e.sets[+p[1]]; if (!x) return;
+    ui.edit = { si: +si, ei: +p[0], k: +p[1], reps: x.reps, kg: x.kg };
+    ui.view = 'editSet'; render(); window.scrollTo(0, 0);
+  },
+  editReps: function(d){ ui.edit.reps = Math.max(0, ui.edit.reps + (+d)); render(); },
+  editKg: function(v){ ui.edit.kg = +v; render(); },
+  editSave: function(){
+    var u = ui.edit, x = S.sessions[u.si].exercises[u.ei].sets[u.k];
+    x.reps = u.reps; x.kg = u.kg; recomputePrs(); store.save();
+    ui.view = 'tabs'; ui.tab = 'history'; ui.openSession = u.si; toast('Set aangepast'); render();
+  },
+  editDelete: function(){
+    var u = ui.edit, s = S.sessions[u.si], e = s.exercises[u.ei];
+    if (!confirm('Deze set verwijderen?')) return;
+    e.sets.splice(u.k, 1);
+    if (!e.sets.length) s.exercises.splice(u.ei, 1);
+    if (!s.exercises.length) { S.sessions.splice(u.si, 1); ui.openSession = null; } else ui.openSession = u.si;
+    recomputePrs(); store.save(); ui.view = 'tabs'; ui.tab = 'history'; toast('Set verwijderd'); render();
+  },
+  editCancel: function(){ ui.view = 'tabs'; ui.tab = 'history'; render(); },
+  fold: function(k){ ui.fold[k] = !ui.fold[k]; render(); },
+  planOpen: function(){ ui.view = 'plan'; render(); window.scrollTo(0, 0); },
+  planDay: function(d){ ui.planDay = +d; ui.view = 'planDay'; render(); window.scrollTo(0, 0); },
+  planBack: function(){ if (ui.view === 'planAdd') ui.view = 'planDay'; else if (ui.view === 'planDay') ui.view = 'plan'; else { ui.view = 'tabs'; ui.tab = 'settings'; } render(); },
+  planSets: function(slot, d){ planEdit(function(day){ var x = day.exercises[+slot]; x.sets = Math.min(10, Math.max(1, x.sets + (+d))); }); },
+  planRest: function(slot, d){ planEdit(function(day){ var x = day.exercises[+slot]; x.rest = Math.min(240, Math.max(15, x.rest + (+d))); }); },
+  planReps: function(slot){ planEdit(function(day){ var x = day.exercises[+slot]; var i = REP_OPTIONS.indexOf(x.reps); x.reps = REP_OPTIONS[(i + 1) % REP_OPTIONS.length]; }); },
+  planMove: function(slot, d){ planEdit(function(day){ var i = +slot, j = i + (+d); if (j < 0 || j >= day.exercises.length) return; var t = day.exercises[i]; day.exercises[i] = day.exercises[j]; day.exercises[j] = t; }); },
+  planRemove: function(slot){
+    var day = PLAN[ui.planDay];
+    if (day.exercises.length <= 1) { toast('Een dag heeft minstens één oefening nodig'); return; }
+    if (!confirm(exName(day.exercises[+slot].id) + ' uit ' + day.name + ' halen?')) return;
+    planEdit(function(day){ var gone = day.exercises.splice(+slot, 1)[0]; day.exercises.forEach(function(x){ if (x.ss === gone.id) delete x.ss; }); });
+  },
+  planAddOpen: function(){ ui.view = 'planAdd'; render(); window.scrollTo(0, 0); },
+  planAdd: function(id){
+    if (!EX[id]) return;
+    var d = defaultsFor(id);
+    planEdit(function(day){ day.exercises.push({ id:id, sets:3, reps:d.reps, kg:kgFor(id, d.kg), rest:d.rest }); });
+    ui.view = 'planDay'; toast(exName(id) + ' toegevoegd aan ' + PLAN[ui.planDay].name); render();
+  },
+  planReset: function(){
+    if (!confirm('Terug naar het standaardschema? Je eigen wijzigingen gaan verloren, je logboek blijft.')) return;
+    S.plan = null; applyPlan(); store.save(); toast('Standaardschema terug'); render();
+  },
   deleteSession: function(i){
     var s = S.sessions[+i]; if (!s) return;
     if (!confirm('Sessie van ' + fmtDate(s.endedAt) + ' verwijderen?')) return;
@@ -692,7 +790,7 @@ var actions = {
   wipe: function(){
     if (!confirm('Alle workouts en gewichten wissen?')) return;
     if (!confirm('Zeker? Dit kan niet ongedaan worden. Maak eerst een backup als je twijfelt.')) return;
-    S = emptyState(); store.save(); ui.pickDay = 0; toast('Alles gewist'); render();
+    S = emptyState(); applyPlan(); store.save(); ui.pickDay = 0; toast('Alles gewist'); render();
   }
 };
 
@@ -711,6 +809,13 @@ function buildSummary(before, session, d){
     better: cmp.filter(function(c){ return c.better; }), prs: session.prs, next: next,
     ago: Rules.sixWeeksAgo(before, session), streak: Rules.streakInfo(after, session.endedAt)
   };
+}
+
+function recomputePrs(){ S.sessions.forEach(function(s, i){ s.prs = Rules.prsFor(S.sessions.slice(0, i), s); }); }
+function planEdit(fn){
+  if (S.active) { toast('Rond eerst je workout af'); return; }
+  if (!S.plan) S.plan = JSON.parse(JSON.stringify(DEFAULT_PLAN));
+  applyPlan(); fn(S.plan[ui.planDay]); store.save(); render();
 }
 
 /* ============ BACKUP NAAR BESTAND ============ */
@@ -733,7 +838,7 @@ function importText(txt){
   if (!data || data.app !== 'workout' || !data.state) { toast('Dit is geen workout-backup'); return; }
   var next = migrate(data.state);
   if (!confirm('Backup met ' + next.sessions.length + ' sessies terugzetten? Dit vervangt wat nu op dit toestel staat.')) return;
-  S = next; store.save(); ui.view = S.active ? 'workout' : 'tabs'; ui.pickDay = Rules.nextDayIndex(S.sessions, PLAN.length);
+  S = next; applyPlan(); store.save(); ui.view = S.active ? 'workout' : 'tabs'; ui.pickDay = Rules.nextDayIndex(S.sessions, PLAN.length);
   toast(S.sessions.length + ' sessies hersteld'); render();
 }
 document.getElementById('importFile').addEventListener('change', function(ev){
@@ -805,11 +910,17 @@ function render(){
   var html;
   if (ui.view === 'workout' && S.active) html = viewWorkout();
   else if (ui.view === 'swap' && S.active) html = viewSwap();
+  else if (ui.view === 'more' && S.active) html = viewMore();
+  else if (ui.view === 'addEx' && S.active) html = viewAddEx();
+  else if (ui.view === 'editSet' && ui.edit && S.sessions[ui.edit.si]) html = viewEditSet();
+  else if (ui.view === 'plan') html = viewPlan();
+  else if (ui.view === 'planDay') html = viewPlanDay();
+  else if (ui.view === 'planAdd') html = viewPlanAdd();
   else if (ui.view === 'done') html = viewDone();
   else { ui.view = 'tabs'; html = ui.tab === 'history' ? viewHistory() : ui.tab === 'progress' ? viewProgress() : ui.tab === 'settings' ? viewSettings() : viewToday(); }
   el.innerHTML = html;
   animateIn(el);
-  el.style.setProperty('--mc', (ui.view === 'workout' || ui.view === 'swap') && S.active ? muscleVar(curEx().muscle) : 'var(--accent)');
+  el.style.setProperty('--mc', /^(workout|swap|more|addEx)$/.test(ui.view) && S.active ? muscleVar(curEx().muscle) : 'var(--accent)');
   var showNav = ui.view === 'tabs';
   el.classList.toggle('has-nav', showNav);
   nav.hidden = !showNav;
@@ -847,16 +958,17 @@ function viewToday(){
   });
   h += '</div></section>';
 
-  h += '<section class="stack" style="gap:8px"><h2 class="h2">Focus deze week</h2>';
-  focus.forEach(function(f){
+  var gehaald = focus.filter(function(f){ return f.have >= f.need; }).length;
+  h += '<section class="stack" style="gap:8px"><button class="fold card" data-act="fold" data-arg="focus" aria-expanded="' + !ui.fold.focus + '"><span><span class="h2">Focus deze week</span><span class="small muted" style="display:block">' + gehaald + ' van ' + focus.length + ' gehaald</span></span>' + ICON.chev + '</button>';
+  if (!ui.fold.focus) focus.forEach(function(f){
     var ok = f.have >= f.need;
     h += '<div class="goal' + (ok ? ' done' : '') + '"><span class="box">' + (ok ? ICON.check : '') + '</span><div class="grow"><div style="font-weight:600">' + esc(f.label) + '</div><div class="small muted">' + Math.min(f.have, f.need) + ' / ' + f.need + ' · ' + esc(f.sub) + '</div></div></div>';
   });
   h += '</section>';
 
-  h += '<section class="card list"><h2 class="h2" style="margin-bottom:4px">' + esc(d.name) + ' in detail</h2>' + d.exercises.map(function(ex){
+  h += '<section class="card list"><button class="fold" data-act="fold" data-arg="detail" aria-expanded="' + !ui.fold.detail + '"><span><span class="h2">' + esc(d.name) + ' in detail</span><span class="small muted" style="display:block">' + d.exercises.map(function(x){ return x.name; }).slice(0, 3).join(', ') + (d.exercises.length > 3 ? ' …' : '') + '</span></span>' + ICON.chev + '</button>' + (ui.fold.detail ? '' : d.exercises.map(function(ex){
     return '<div class="item"><div><div>' + esc(ex.name) + (ex.elbow ? ' <span class="tag">elleboog</span>' : '') + '</div><div class="small muted">' + ex.sets + ' × ' + esc(ex.reps) + (ex.ss ? ' · superset' : '') + '</div></div><div class="num">' + (ex.kg ? fmtKg(ex.kg) + ' kg' : 'lichaam') + '</div></div>';
-  }).join('') + '</section>';
+  }).join('')) + '</section>';
   h += '</div>';
   return h;
 }
@@ -866,14 +978,15 @@ function viewWorkout(){
   ensureDraft();
   var prev = idx === null ? null : Rules.lastRepsFor(S.sessions, ex.id, idx);
   var sug = Rules.suggestion(S.sessions, ex, ex.kg, d.light);
+  var tired = sug ? null : Rules.fatigue(S.sessions, ex, ex.kg, d.light);
   var mins = Math.floor((Date.now() - S.active.startedAt) / 60000);
   var anyDone = e.sets.some(function(s){ return s && s.done; });
   var h = '';
   h += '<div class="topbar"><button class="icon-btn" data-act="home" aria-label="Naar start (workout blijft lopen)">' + ICON.back + '</button><span class="eyebrow">' + esc(d.name) + ' · ' + mins + ' min' + (d.light ? ' · licht' : '') + '</span><button class="icon-btn" data-act="finish" style="padding:0 12px;color:var(--accent);font-weight:600">Klaar</button></div>';
   h += '<div class="between"><div class="eyebrow acc">' + (ex.muscle ? '● ' + esc(ex.muscle) + ' · ' : '') + 'Oefening ' + (S.active.exIdx + 1) + ' / ' + d.exercises.length + (ex.ss ? ' · superset' : '') + '</div>';
-  h += (anyDone ? '' : '<button class="icon-btn" data-act="swapOpen" aria-label="Oefening wisselen" style="background:var(--card2)">' + ICON.swap + '</button>') + '</div>';
+  h += '<button class="icon-btn" data-act="more" aria-label="Extra set, oefening toevoegen of wisselen" style="background:var(--card2)">' + ICON.plus + '</button></div>';
   h += '<h1 class="h1">' + esc(ex.name) + '</h1>';
-  h += '<div class="muted small" style="margin-top:4px">' + ex.sets + ' × ' + esc(ex.reps) + ' · rust ' + (ex.ss ? '0' : ex.rest) + ' s' + (ex.swapped ? ' · gewisseld' : '') + '</div>';
+  h += '<div class="muted small" style="margin-top:4px">' + ex.sets + ' × ' + esc(ex.reps) + ' · rust ' + (ex.ss ? '0' : ex.rest) + ' s' + (ex.swapped ? ' · gewisseld' : '') + (ex.added ? ' · extra' : '') + '</div>';
   h += '<div class="sets">';
   for (var i = 0; i < ex.sets; i++) {
     var s = e.sets[i], cls = s && s.done ? 'done' : (i === idx ? 'cur' : '');
@@ -881,6 +994,7 @@ function viewWorkout(){
   }
   h += '</div>';
   if (sug) h += '<button class="suggest" style="margin-top:12px" data-act="applySuggest" data-arg="' + esc(ex.id) + '" data-arg2="' + sug.to + '"><div class="eyebrow" style="color:inherit">Klaar voor meer</div><div class="num" style="font-size:24px">' + fmtKg(sug.from) + ' → ' + fmtKg(sug.to) + ' kg · tik om toe te passen</div><div class="small">' + esc(sug.reason) + '</div></button>';
+  if (tired) h += '<button class="suggest" style="margin-top:12px;background:var(--card2);color:var(--text);border:1px solid var(--warn)" data-act="applySuggest" data-arg="' + esc(ex.id) + '" data-arg2="' + tired.to + '"><div class="eyebrow" style="color:var(--warn)">Even een stap terug?</div><div class="num" style="font-size:24px">' + fmtKg(tired.from) + ' → ' + fmtKg(tired.to) + ' kg · tik om toe te passen</div><div class="small muted">' + esc(tired.reason) + ' Lichter en goed uitgevoerd brengt je sneller terug.</div></button>';
   h += '<div class="spacer"></div>';
   if (idx !== null) {
     h += '<div class="counter"><button class="pm" data-act="minus" aria-label="Rep minder">−</button><div class="val"><b class="' + (ui.touched ? '' : 'ghost') + '">' + ui.draftReps + '</b><span class="eyebrow">' + (prev != null ? 'Reps · vorig ' + prev : 'Reps · eerste keer') + '</span></div><button class="pm" data-act="plus" aria-label="Rep meer">+</button></div>';
@@ -889,7 +1003,7 @@ function viewWorkout(){
       h += '<div class="ladder">' + (lo !== null ? '<button data-act="kg" data-arg="' + lo + '" aria-label="Lichter: ' + fmtKg(lo) + ' kg">' + fmtKg(lo) + '</button>' : '') + '<button class="on" aria-pressed="true">' + fmtKg(ex.kg) + ' KG</button>' + (hi !== null ? '<button data-act="kg" data-arg="' + hi + '" aria-label="Zwaarder: ' + fmtKg(hi) + ' kg">' + fmtKg(hi) + '</button>' : '') + '</div>';
     }
   } else {
-    h += '<div class="card" style="text-align:center"><div class="h2">Oefening klaar</div><div class="muted small">Ga naar de volgende of rond af.</div></div>';
+    h += '<div class="card stack" style="text-align:center;gap:10px"><div class="h2">Oefening klaar</div><div class="muted small">Ga naar de volgende of rond af.</div><button class="btn" data-act="addSet">+ Extra set</button></div>';
   }
   var wu = Rules.warmup(d, S.active.exIdx);
   if (wu && idx === 0) h += '<div class="tip" style="margin-top:14px"><span><b>Eerst opwarmen:</b> 1 × ' + wu.reps + ' op ' + fmtKg(wu.kg) + ' kg. Telt niet mee.</span></div>';
@@ -901,6 +1015,74 @@ function viewWorkout(){
   h += '</div>';
   if (S.active.restEndsAt) h += '<div style="height:84px"></div><div class="timer" id="timer"><div class="grow"><div class="row" style="gap:8px;align-items:baseline"><span class="small muted" id="timerLabel">Rust</span><span class="t" id="timerVal">0:00</span></div><div class="bar"><i id="timerBar" style="width:100%"></i></div></div><button data-act="restAdd">+30</button><button data-act="restSkip">Skip</button></div>';
   return h;
+}
+
+function subTop(act, label){ return '<div class="topbar"><button class="icon-btn" data-act="' + act + '" aria-label="Terug">' + ICON.back + '</button><span class="eyebrow">' + esc(label) + '</span><span style="width:44px"></span></div>'; }
+function viewMore(){
+  var ex = curEx(), e = activeEntry(ex), anyDone = e.sets.some(function(s){ return s && s.done; });
+  var h = subTop('swapCancel', 'Deze workout') + '<h1 class="h1">' + esc(ex.name) + '</h1><div class="stack" style="margin-top:16px">';
+  h += '<button class="btn" style="text-align:left;min-height:64px" data-act="addSet"><div style="font-weight:700">+ Extra set</div><div class="small muted">' + ex.sets + ' → ' + (ex.sets + 1) + ' sets, alleen vandaag</div></button>';
+  h += '<button class="btn" style="text-align:left;min-height:64px" data-act="addExOpen"><div style="font-weight:700">+ Oefening toevoegen</div><div class="small muted">Komt achteraan deze workout</div></button>';
+  h += anyDone ? '<div class="small muted" style="padding:4px 2px">Wisselen kan alleen voor je eerste set van een oefening.</div>'
+               : '<button class="btn" style="text-align:left;min-height:64px" data-act="swapOpen"><div style="font-weight:700">Oefening wisselen</div><div class="small muted">Bv. een ellebooglichter alternatief</div></button>';
+  return h + '</div>';
+}
+function exPicker(act, exclude){
+  var h = '';
+  MUSCLES.forEach(function(m){
+    var ids = Object.keys(EX).filter(function(id){ return EX[id].muscle === m && exclude.indexOf(id) < 0; });
+    if (!ids.length) return;
+    h += '<section class="card list"><h2 class="h2" style="margin-bottom:4px;color:' + muscleVar(m) + '">' + m + '</h2>' + ids.map(function(id){
+      return '<button class="item" style="width:100%;text-align:left" data-act="' + act + '" data-arg="' + esc(id) + '"><span>' + esc(EX[id].name) + (EX[id].elbow ? ' <span class="tag">elleboog</span>' : '') + '</span>' + ICON.plus + '</button>';
+    }).join('') + '</section>';
+  });
+  return h;
+}
+function viewAddEx(){
+  var d = activeDay();
+  return subTop('more', 'Oefening toevoegen') + '<div class="stack"><h1 class="h1">Wat wil je erbij?</h1><div class="small muted">Alleen voor deze workout. Je schema blijft zoals het is.</div>' + exPicker('addEx', d.exercises.map(function(x){ return x.id; })) + '</div>';
+}
+function viewEditSet(){
+  var u = ui.edit, s = S.sessions[u.si], e = s.exercises[u.ei];
+  var h = subTop('editCancel', 'Set aanpassen') + '<div class="stack">';
+  h += '<div><h1 class="h1">' + esc(e.name) + '</h1><div class="muted small" style="margin-top:4px">' + esc(s.dayName || PLAN[s.dayIndex].name) + ' · ' + esc(fmtDate(s.endedAt)) + ' · set ' + (u.k + 1) + '</div></div>';
+  h += '<div class="counter"><button class="pm" data-act="editReps" data-arg="-1" aria-label="Rep minder">−</button><div class="val"><b>' + u.reps + '</b><span class="eyebrow">Reps</span></div><button class="pm" data-act="editReps" data-arg="1" aria-label="Rep meer">+</button></div>';
+  var opts = [0].concat(Rules.LADDER);
+  if (opts.indexOf(u.kg) < 0) opts.push(u.kg);
+  h += '<div class="ladder">' + opts.map(function(k){ return '<button class="' + (k === u.kg ? 'on' : '') + '" data-act="editKg" data-arg="' + k + '" aria-pressed="' + (k === u.kg) + '">' + (k ? fmtKg(k) : 'lichaam') + '</button>'; }).join('') + '</div>';
+  h += '<div class="spacer"></div><button class="btn-big" data-act="editSave">Opslaan</button><button class="btn btn-danger" data-act="editDelete">Set verwijderen</button>';
+  return h + '</div>';
+}
+function viewPlan(){
+  var h = subTop('planBack', 'Instellingen') + '<div class="stack"><h1 class="h1">Schema</h1>';
+  h += '<div class="small muted">Tik op een dag om oefeningen, sets, reps en rust aan te passen. Je logboek blijft altijd bewaard per oefening.' + (S.plan ? ' Je gebruikt een eigen schema.' : ' Je gebruikt het standaardschema.') + '</div>';
+  if (S.active) h += '<div class="tip">Je hebt een workout lopen. Rond die eerst af voor je het schema aanpast.</div>';
+  h += PLAN.map(function(d, i){
+    var sets = d.exercises.reduce(function(a, x){ return a + x.sets; }, 0);
+    return '<button class="card" style="width:100%;text-align:left" data-act="planDay" data-arg="' + i + '"><div class="between"><span class="h2"><i aria-hidden="true" style="display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px;vertical-align:2px;background:' + dayColor({ dayId: d.id }) + '"></i>' + esc(d.name) + '</span><span class="small muted">' + d.exercises.length + ' oef. · ' + sets + ' sets</span></div><div class="small muted" style="margin-top:4px">' + esc(d.exercises.map(function(x){ return exName(x.id); }).join(', ')) + '</div></button>';
+  }).join('');
+  if (S.plan) h += '<button class="btn btn-danger" data-act="planReset">Terug naar standaardschema</button>';
+  return h + '</div>';
+}
+function viewPlanDay(){
+  var d = PLAN[ui.planDay];
+  var h = subTop('planBack', 'Schema') + '<div class="stack"><div><h1 class="h1">' + esc(d.name) + '</h1><div class="small muted" style="margin-top:4px">' + esc(d.title) + '</div></div>';
+  d.exercises.forEach(function(x, i){
+    var info = EX[x.id] || {};
+    h += '<section class="card stack" style="gap:10px"><div class="between" style="align-items:center"><div><div style="font-weight:700">' + esc(info.name || x.id) + '</div><div class="small" style="color:' + muscleVar(info.muscle) + '">' + esc(info.muscle || '') + (x.ss ? ' · superset met ' + esc(exName(x.ss)) : '') + '</div></div>';
+    h += '<div class="row" style="gap:4px"><button class="icon-btn" data-act="planMove" data-arg="' + i + '" data-arg2="-1" aria-label="Omhoog"' + (i === 0 ? ' disabled style="opacity:.3"' : '') + '>' + ICON.up + '</button><button class="icon-btn" data-act="planMove" data-arg="' + i + '" data-arg2="1" aria-label="Omlaag" style="transform:scaleY(-1);' + (i === d.exercises.length - 1 ? 'opacity:.3' : '') + '"' + (i === d.exercises.length - 1 ? ' disabled' : '') + '>' + ICON.up + '</button></div></div>';
+    h += '<div class="row" style="gap:6px;flex-wrap:wrap">';
+    h += '<div class="seg stepper"><button data-act="planSets" data-arg="' + i + '" data-arg2="-1" aria-label="Set minder">−</button><span class="num" style="padding:0 8px;align-self:center;font-size:17px">' + x.sets + ' sets</span><button data-act="planSets" data-arg="' + i + '" data-arg2="1" aria-label="Set meer">+</button></div>';
+    h += '<button class="seg stepper" style="padding:0 14px" data-act="planReps" data-arg="' + i + '" aria-label="Reps wijzigen"><span class="num" style="align-self:center;font-size:17px">' + esc(x.reps) + ' reps</span></button>';
+    h += '<div class="seg stepper"><button data-act="planRest" data-arg="' + i + '" data-arg2="-15" aria-label="Minder rust">−</button><span class="num" style="padding:0 8px;align-self:center;font-size:17px">' + x.rest + ' s</span><button data-act="planRest" data-arg="' + i + '" data-arg2="15" aria-label="Meer rust">+</button></div>';
+    h += '</div><button class="btn-danger" style="min-height:44px;align-self:flex-start;font-weight:600;font-size:14px;padding:0 2px" data-act="planRemove" data-arg="' + i + '">Uit ' + esc(d.name) + ' halen</button></section>';
+  });
+  h += '<button class="btn-big" data-act="planAddOpen">+ Oefening toevoegen</button>';
+  return h + '</div>';
+}
+function viewPlanAdd(){
+  var d = PLAN[ui.planDay];
+  return subTop('planBack', d.name) + '<div class="stack"><h1 class="h1">Toevoegen aan ' + esc(d.name) + '</h1>' + exPicker('planAdd', d.exercises.map(function(x){ return x.id; })) + '</div>';
 }
 
 function viewSwap(){
@@ -990,9 +1172,9 @@ function viewHistory(){
     h += '<section class="card" id="sess-' + i + '"><button style="width:100%;text-align:left" data-act="toggleSession" data-arg="' + i + '" aria-expanded="' + open + '"><div class="between"><span class="h2"><i aria-hidden="true" style="display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px;vertical-align:2px;background:' + dayColor(s) + '"></i>' + esc(s.dayName || PLAN[s.dayIndex].name) + '</span><span class="small muted">' + esc(fmtDate(s.endedAt)) + '</span></div>';
     h += '<div class="small muted" style="margin-top:2px">' + sets + (sets === 1 ? ' set · ' : ' sets · ') + mins + ' min' + (s.light ? ' · lichte week' : '') + (s.prs && s.prs.length ? ' · <span class="tag pr">' + s.prs.length + ' record' + (s.prs.length > 1 ? 's' : '') + '</span>' : '') + '</div></button>';
     if (open) {
-      h += '<div class="list" style="margin-top:8px">' + s.exercises.map(function(e){
-        return '<div class="item"><span>' + esc(e.name) + '</span><span class="num small" style="font-size:15px;text-align:right">' + e.sets.map(function(x){ return x.reps + (x.kg ? '×' + fmtKg(x.kg) : ''); }).join(' · ') + '</span></div>';
-      }).join('') + '</div><button class="btn btn-danger" style="width:100%;margin-top:10px" data-act="deleteSession" data-arg="' + i + '">Sessie verwijderen</button>';
+      h += '<div class="list" style="margin-top:8px">' + s.exercises.map(function(e, ei){
+        return '<div class="item" style="flex-wrap:wrap"><span>' + esc(e.name) + '</span><span style="display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end">' + e.sets.map(function(x, k){ return '<button class="chip" data-act="editSet" data-arg="' + i + '" data-arg2="' + ei + ':' + k + '" aria-label="Set ' + (k + 1) + ' aanpassen">' + x.reps + (x.kg ? '×' + fmtKg(x.kg) : '') + '</button>'; }).join('') + '</span></div>';
+      }).join('') + '</div><div class="small muted" style="margin-top:6px">Tik op een set om hem aan te passen.</div><button class="btn btn-danger" style="width:100%;margin-top:10px" data-act="deleteSession" data-arg="' + i + '">Sessie verwijderen</button>';
     }
     h += '</section>';
   }
@@ -1053,6 +1235,7 @@ function viewSettings(){
   var days = S.lastExport ? Math.floor((Date.now() - S.lastExport) / 86400000) : null;
   var standalone = (window.navigator.standalone === true) || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
   var h = '<div class="stack"><h1 class="h1">Instellingen</h1>';
+  h += '<button class="card" style="width:100%;text-align:left" data-act="planOpen"><div class="between" style="align-items:center"><div><div class="h2">Schema aanpassen</div><div class="small muted" style="margin-top:2px">' + (S.plan ? 'Eigen schema' : 'Standaardschema') + ' · oefeningen, sets, reps, rust</div></div><span style="transform:rotate(-90deg);display:inline-flex">' + ICON.chev + '</span></div></button>';
   h += '<section class="card stack" style="gap:10px"><h2 class="h2">Backup</h2><div class="small muted">Je data staat alleen op deze telefoon. ' + (days === null ? 'Nog geen backup gemaakt.' : 'Laatste backup ' + (days === 0 ? 'vandaag' : days + ' dagen geleden') + '.') + ' Bewaar het bestand in Bestanden of iCloud Drive.</div>';
   h += '<div class="row"><button class="btn grow" data-act="exportData">Backup maken</button><button class="btn grow" data-act="importData">Terugzetten</button></div></section>';
   h += '<section class="card diag"><div class="h2" style="color:var(--text);margin-bottom:6px;font-family:var(--cond)">Toestel</div>' + [
