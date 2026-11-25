@@ -1,0 +1,7 @@
+{
+  "name": "workout",
+  "private": true,
+  "description": "Persoonlijke workout PWA (GitHub Pages). Geen build-stap; dit bestand is enkel voor de tests.",
+  "scripts": { "test": "node --test tests/*.test.js" },
+  "devDependencies": { "jsdom": "^24.1.3" }
+}
