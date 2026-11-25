@@ -439,7 +439,13 @@ var ELBOW_TIP = 'Ellebogen: 3 seconden naar beneden, onderaan niet volledig stre
 var VERSION = '2.0.0';
 
 /* ============ OPSLAG: één state-object, één migrate() voor laden en import ============ */
-var STORE_KEY = 'wo_v1';
+var STORE_KEY = 'workout_v2';
+// Schone start (Louis, 25 nov 2026): oude app (wt_*) en PoC/testdata (wo_v1) weg. Alleen eigen sleutels,
+// want localStorage is gedeeld met de andere apps op dit domein.
+try {
+  ['wo_v1'].concat(Object.keys(localStorage).filter(function(k){ return /^wt_/.test(k); }))
+    .forEach(function(k){ localStorage.removeItem(k); });
+} catch(e){}
 var SCHEMA = 2;
 var memoryFallback = null, storageOk = true;
 function emptyState(){ return { v:SCHEMA, sessions:[], kg:{}, active:null, lastExport:null }; }
@@ -919,7 +925,6 @@ function viewSettings(){
     'sessies: ' + S.sessions.length,
     'versie: ' + VERSION
   ].map(esc).join('<br>') + '</section>';
-  h += '<a class="btn" style="display:flex;align-items:center;justify-content:center;text-decoration:none" href="legacy.html">Oude app openen (data van voor de rebuild)</a>';
   h += '<button class="btn btn-danger" data-act="wipe">Alle data wissen</button>';
   return h + '</div>';
 }

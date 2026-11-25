@@ -18,14 +18,14 @@ function boot(preload) {
       w.confirm = () => true;
       w.scrollTo = () => {};
       w.addEventListener('error', (e) => errors.push(e.message));
-      if (preload) w.localStorage.setItem('wo_v1', JSON.stringify(preload));
+      if (preload) w.localStorage.setItem('workout_v2', JSON.stringify(preload));
     }
   });
   const w = dom.window;
   open.push(w);
   const $ = (s) => w.document.querySelector(s);
   const click = (s) => { const el = $(s); assert.ok(el, 'knop ontbreekt: ' + s); el.click(); };
-  const state = () => JSON.parse(w.localStorage.getItem('wo_v1'));
+  const state = () => JSON.parse(w.localStorage.getItem('workout_v2'));
   return { w, $, click, state, errors, text: () => w.document.getElementById('app').textContent };
 }
 
@@ -108,7 +108,7 @@ test('kapotte opslag crasht de app niet', () => {
   const errors = [];
   const dom = new JSDOM(html, { runScripts: 'dangerously', url: 'https://localhost/', beforeParse(w) {
     w.matchMedia = () => ({ matches: false });
-    w.localStorage.setItem('wo_v1', '{kapot');
+    w.localStorage.setItem('workout_v2', '{kapot');
     w.addEventListener('error', (e) => errors.push(e.message));
   } });
   open.push(dom.window);
@@ -191,4 +191,20 @@ test('backup terugzetten loopt door dezelfde migrate()', () => {
   assert.strictEqual(s.sessions.length, 1, 'kapotte sessie eruit gefilterd');
   assert.strictEqual(s.kg.ohp, 14.5);
   assert.strictEqual(s.v, 2);
+});
+
+test('oude app- en testdata worden opgeruimd, andere apps niet', () => {
+  const dom = new JSDOM(html, { runScripts: 'dangerously', url: 'https://localhost/workout/', beforeParse(w) {
+    w.matchMedia = () => ({ matches: false });
+    w.localStorage.setItem('wo_v1', '{"sessions":[]}');
+    w.localStorage.setItem('wt_h4', '[]');
+    w.localStorage.setItem('wt_kgs', '{}');
+    w.localStorage.setItem('budget_state', 'blijft');
+  } });
+  open.push(dom.window);
+  const ls = dom.window.localStorage;
+  assert.strictEqual(ls.getItem('wo_v1'), null);
+  assert.strictEqual(ls.getItem('wt_h4'), null);
+  assert.strictEqual(ls.getItem('wt_kgs'), null);
+  assert.strictEqual(ls.getItem('budget_state'), 'blijft');
 });
