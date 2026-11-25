@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Workout PoC">
+<meta name="theme-color" content="#050505">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="../icon.png">
+<title>Workout PoC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050505;--card:#111110;--card2:#161614;--line:#2a2a26;
+  --text:#f5f5f0;--muted:#a3a39b;--ghost:#6f6f68;
+  --accent:#ffd60a;--accent-ink:#050505;--warn:#ff8a3d;--info:#5cc8ff;
+  --r:18px;--r-sm:12px;
+  --cond:'Barlow Condensed',system-ui,sans-serif;--body:'Barlow',system-ui,sans-serif;
+  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:16px;-webkit-text-size-adjust:100%}
+body{min-height:100vh;min-height:100dvh}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{max-width:480px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;padding:calc(var(--st) + 16px) 20px calc(var(--sb) + 20px)}
+.eyebrow{font-family:var(--cond);font-weight:700;font-size:15px;letter-spacing:3px;color:var(--muted);text-transform:uppercase}
+.eyebrow.acc{color:var(--accent)}
+.h1{font-family:var(--cond);font-weight:800;font-size:44px;line-height:.95;text-transform:uppercase}
+.h2{font-family:var(--cond);font-weight:800;font-size:20px;letter-spacing:1px;text-transform:uppercase}
+.muted{color:var(--muted)}.small{font-size:13px}
+.card{background:var(--card);border-radius:var(--r);padding:14px 16px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;align-items:center;gap:12px}
+.grow{flex:1;min-width:0}
+.num{font-family:var(--cond);font-weight:700}
+.btn{height:56px;border-radius:16px;background:var(--card2);font-weight:600;font-size:16px;padding:0 16px}
+.btn-big{height:68px;border-radius:20px;background:var(--accent);color:var(--accent-ink);font-family:var(--cond);font-weight:800;font-size:28px;letter-spacing:1px;width:100%;text-transform:uppercase}
+.btn-light{background:var(--text);color:var(--bg)}
+.icon-btn{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:12px}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin:-6px -10px 8px}
+.exlist .ex{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.exlist .ex:last-child{border-bottom:0}
+.tag{font-size:12px;padding:3px 8px;border-radius:6px;background:#1d2a33;color:var(--info)}
+.daypick{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.daypick button{height:52px;border-radius:12px;background:var(--card2);font-family:var(--cond);font-weight:700;font-size:16px}
+.daypick button.on{background:var(--accent);color:var(--accent-ink)}
+/* workout */
+.sets{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:6px;margin-top:16px}
+.set{height:56px;border-radius:10px;background:var(--card2);color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.set b{font-family:var(--cond);font-weight:800;font-size:22px;line-height:1}
+.set span{font-size:11px;font-weight:600}
+.set.done{background:var(--accent);color:var(--accent-ink)}
+.set.cur{border:2px solid var(--accent);color:var(--accent)}
+.counter{display:flex;align-items:center;justify-content:space-between;margin:8px 0}
+.counter .pm{width:76px;height:76px;border-radius:22px;background:var(--card2);font-size:38px}
+.counter .val{display:flex;flex-direction:column;align-items:center}
+.counter .val b{font-family:var(--cond);font-weight:800;font-size:132px;line-height:.9}
+.counter .val b.ghost{color:var(--ghost);font-style:italic}
+.ladder{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.ladder button{height:44px;min-width:64px;padding:0 14px;border-radius:999px;background:var(--card2);color:var(--muted);font-family:var(--cond);font-weight:700;font-size:20px}
+.ladder button.on{background:transparent;border:2px solid var(--text);color:var(--text);font-weight:800}
+.tip{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:14px;background:var(--card);font-size:14px;line-height:1.4}
+.suggest{background:var(--accent);color:var(--accent-ink);border-radius:var(--r);padding:12px 16px}
+.spacer{flex:1}
+.timer{position:fixed;left:12px;right:12px;bottom:calc(var(--sb) + 12px);max-width:456px;margin:0 auto;background:#1a1a17;border:1px solid var(--accent);border-radius:20px;padding:12px 12px 12px 18px;display:flex;align-items:center;gap:10px;z-index:10}
+.timer .t{font-family:var(--cond);font-weight:800;font-size:40px;color:var(--accent);line-height:1}
+.timer .bar{height:4px;border-radius:2px;background:#2b2b27;margin-top:6px}
+.timer .bar i{display:block;height:4px;border-radius:2px;background:var(--accent)}
+.timer button{height:48px;padding:0 14px;border-radius:12px;background:#2b2b27;font-weight:600}
+.timer.over{border-color:var(--warn)}.timer.over .t{color:var(--warn)}
+.diag{font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;color:var(--muted)}
+.toast{position:fixed;left:50%;top:calc(var(--st) + 12px);transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:20;max-width:90vw}
+@media (prefers-reduced-motion:no-preference){.set,.ladder button{transition:background .15s,color .15s}}
+</style>
+</head>
+<body>
+<div id="app" class="app" aria-live="polite"></div>
+<div id="toast" class="toast" hidden></div>
+<input id="importFile" type="file" accept="application/json,.json" hidden>
+
+<script id="rules">
+/* ============ RULES: pure functions, no DOM, no storage ============ */
+var Rules = (function(){
+  var LADDER = [2, 3.25, 4.5, 7, 9.5, 12, 14.5, 17];
+
+  function parseRange(s){
+    var m = /^(\d+)\s*-\s*(\d+)$/.exec(String(s||'').trim());
+    if (m) return { min: +m[1], max: +m[2] };
+    m = /^(\d+)$/.exec(String(s||'').trim());
+    if (m) return { min: +m[1], max: +m[1] };
+    return null; // "max", "45-60s", "8/been": geen automatische progressie
+  }
+  function ladderIndex(kg){
+    for (var i = 0; i < LADDER.length; i++) if (Math.abs(LADDER[i] - kg) < 0.01) return i;
+    return -1;
+  }
+  function nextStep(kg){ var i = ladderIndex(kg); return (i >= 0 && i < LADDER.length - 1) ? LADDER[i + 1] : null; }
+  function prevStep(kg){ var i = ladderIndex(kg); return i > 0 ? LADDER[i - 1] : null; }
+
+  // Volgende dag in de rotatie: na de laatst afgewerkte dag, ongeacht weekdag.
+  function nextDayIndex(sessions, dayCount){
+    if (!sessions.length) return 0;
+    var last = sessions[sessions.length - 1];
+    return (last.dayIndex + 1) % dayCount;
+  }
+
+  // Alle sessies (nieuwste eerst) waarin een oefening voorkomt.
+  function entriesFor(sessions, exId){
+    var out = [];
+    for (var i = sessions.length - 1; i >= 0; i--) {
+      var e = sessions[i].exercises.find(function(x){ return x.id === exId; });
+      if (e) out.push(e);
+    }
+    return out;
+  }
+  function lastRepsFor(sessions, exId, setIdx){
+    var es = entriesFor(sessions, exId);
+    for (var i = 0; i < es.length; i++) {
+      var s = es[i].sets[setIdx];
+      if (s && s.done && s.reps > 0) return s.reps;
+    }
+    return null;
+  }
+  function hitTop(entry, ex, kg){
+    var r = parseRange(ex.reps);
+    if (!r || !entry) return false;
+    var done = entry.sets.filter(function(s){ return s.done; });
+    if (done.length < ex.sets) return false;
+    return done.every(function(s){ return s.kg === kg && s.reps >= r.max; });
+  }
+  // Double progression: eerst reps tot de top van de range op alle sets, dan de volgende stap.
+  // Elleboog-oefeningen: twee sessies op rij.
+  function suggestion(sessions, ex, kg){
+    if (!kg || !parseRange(ex.reps)) return null;
+    var nxt = nextStep(kg);
+    if (nxt === null) return null;
+    var es = entriesFor(sessions, ex.id);
+    var need = ex.elbow ? 2 : 1;
+    if (es.length < need) return null;
+    for (var i = 0; i < need; i++) if (!hitTop(es[i], ex, kg)) return null;
+    return { from: kg, to: nxt, reason: ex.elbow ? 'Twee sessies op rij de top van de range gehaald.' : 'Top van de range gehaald op alle sets.' };
+  }
+
+  // Rust na een set. Superset-eerste oefening: geen rust, meteen naar de partner.
+  function restAfter(day, exIdx){
+    var ex = day.exercises[exIdx];
+    if (ex.ss) return 0;
+    return ex.rest || 60;
+  }
+  // Timer op kloktijd: klopt ook na app-wissel of scherm uit.
+  function remaining(endsAt, now){ return Math.ceil((endsAt - now) / 1000); }
+
+  function isComplete(active, day){
+    return day.exercises.every(function(ex){
+      var e = active.exercises.find(function(x){ return x.id === ex.id; });
+      return e && e.sets.length >= ex.sets && e.sets.slice(0, ex.sets).every(function(s){ return s.done; });
+    });
+  }
+
+  // Opwarmset voor de eerste oefening met gewicht: 1 × 10 een stap lager op de ladder.
+  function warmup(day, exIdx){
+    var first = day.exercises.findIndex(function(e){ return e.kg > 0 && parseRange(e.reps); });
+    if (exIdx !== first) return null;
+    var ex = day.exercises[exIdx];
+    var lo = prevStep(ex.kg);
+    return lo === null ? null : { kg: lo, reps: 10 };
+  }
+  function weekStart(ts){
+    var d = new Date(ts); d.setHours(0,0,0,0);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return d.getTime();
+  }
+
+  return { LADDER: LADDER, parseRange: parseRange, nextStep: nextStep, prevStep: prevStep, ladderIndex: ladderIndex,
+           nextDayIndex: nextDayIndex, entriesFor: entriesFor, lastRepsFor: lastRepsFor, suggestion: suggestion,
+           restAfter: restAfter, remaining: remaining, isComplete: isComplete, weekStart: weekStart, warmup: warmup };
+})();
+</script>
+
+<script id="app-js">
+/* ============ PLAN ============ */
+var PLAN = [
+  { id:'push-a', name:'Push A', title:'Borst & Triceps', exercises:[
+    {id:'chest-press', name:'Chest Press (vloer)', sets:4, reps:'6-10', kg:12, rest:90},
+    {id:'incline-press', name:'Incline DB Press', sets:3, reps:'6-10', kg:9.5, rest:90},
+    {id:'db-flye', name:'DB Flye (vloer)', sets:3, reps:'10-12', kg:9.5, rest:60},
+    {id:'ohp', name:'Overhead Press', sets:3, reps:'6-10', kg:12, rest:90},
+    {id:'kickback', name:'Tricep Kickback', sets:3, reps:'10-12', kg:7, rest:60, elbow:true},
+    {id:'diamond-pushup', name:'Diamond Push-up', sets:3, reps:'max', kg:0, rest:60, elbow:true}
+  ]},
+  { id:'pull-a', name:'Pull A', title:'Rug & Biceps', exercises:[
+    {id:'bent-row', name:'Bent-Over Row', sets:4, reps:'6-10', kg:12, rest:90},
+    {id:'sa-row', name:'Single-Arm DB Row', sets:3, reps:'6-10', kg:12, rest:90},
+    {id:'pullover', name:'DB Pullover', sets:3, reps:'10-12', kg:9.5, rest:60},
+    {id:'reverse-fly', name:'Reverse Fly', sets:3, reps:'10-12', kg:9.5, rest:60},
+    {id:'bicep-curl', name:'Bicep Curl', sets:3, reps:'10-12', kg:9.5, rest:60, elbow:true, ss:'hammer-curl'},
+    {id:'hammer-curl', name:'Hammer Curl', sets:3, reps:'10-12', kg:9.5, rest:90, elbow:true}
+  ]},
+  { id:'legs', name:'Benen', title:'Benen & Billen', exercises:[
+    {id:'goblet-squat', name:'Goblet Squat', sets:4, reps:'6-10', kg:12, rest:90},
+    {id:'rdl', name:'Romanian Deadlift', sets:4, reps:'6-10', kg:12, rest:90},
+    {id:'bulgarian', name:'Bulgaarse Split Squat', sets:3, reps:'8/been', kg:4.5, rest:90},
+    {id:'hip-thrust', name:'Hip Thrust', sets:3, reps:'10-12', kg:12, rest:60},
+    {id:'lunge', name:'DB Lunge', sets:3, reps:'10/been', kg:7, rest:60},
+    {id:'calf-raise', name:'Calf Raise', sets:4, reps:'20', kg:0, rest:45}
+  ]},
+  { id:'push-b', name:'Push B', title:'Borst & Schouders', exercises:[
+    {id:'chest-press', name:'Chest Press (vloer)', sets:4, reps:'6-10', kg:12, rest:90},
+    {id:'db-flye', name:'DB Flye (vloer)', sets:3, reps:'10-12', kg:9.5, rest:60},
+    {id:'incline-press', name:'Incline DB Press', sets:3, reps:'6-10', kg:9.5, rest:90},
+    {id:'lateral-raise', name:'Lateral Raise', sets:4, reps:'10-12', kg:7, rest:60},
+    {id:'arnold-press', name:'Arnold Press', sets:3, reps:'6-10', kg:9.5, rest:90},
+    {id:'tricep-dip', name:'Tricep Dip', sets:3, reps:'max', kg:0, rest:60, elbow:true}
+  ]},
+  { id:'pull-b', name:'Pull B', title:'Biceps & Upper Back', exercises:[
+    {id:'sa-row', name:'Single-Arm DB Row', sets:4, reps:'6-10', kg:12, rest:90},
+    {id:'reverse-fly', name:'Reverse Fly', sets:3, reps:'10-12', kg:9.5, rest:60},
+    {id:'pullover', name:'DB Pullover', sets:3, reps:'10-12', kg:9.5, rest:60},
+    {id:'hammer-curl', name:'Hammer Curl', sets:4, reps:'10-12', kg:9.5, rest:60, elbow:true},
+    {id:'bicep-curl', name:'Bicep Curl', sets:3, reps:'10-12', kg:9.5, rest:60, elbow:true},
+    {id:'plank', name:'Plank', sets:3, reps:'45-60s', kg:0, rest:45},
+    {id:'dead-bug', name:'Dead Bug', sets:3, reps:'10', kg:0, rest:45},
+    {id:'russian-twist', name:'Russian Twist (DB)', sets:3, reps:'20', kg:7, rest:45}
+  ]}
+];
+var ELBOW_TIP = 'Ellebogen: 3 seconden naar beneden, onderaan niet volledig strekken, geen swing.';
+
+/* ============ STORE: één state-object, één migrate() voor load en import ============ */
+var STORE_KEY = 'wo_v1';
+var SCHEMA = 1;
+var memoryFallback = null;
+function emptyState(){ return { v:SCHEMA, sessions:[], kg:{}, active:null, lastExport:null }; }
+function migrate(s){
+  if (!s || typeof s !== 'object') return emptyState();
+  var out = emptyState();
+  out.sessions = Array.isArray(s.sessions) ? s.sessions.filter(function(x){ return x && typeof x.dayIndex === 'number' && Array.isArray(x.exercises); }) : [];
+  out.kg = (s.kg && typeof s.kg === 'object') ? s.kg : {};
+  out.active = (s.active && typeof s.active === 'object' && typeof s.active.dayIndex === 'number') ? s.active : null;
+  out.lastExport = s.lastExport || null;
+  return out;
+}
+var store = {
+  load: function(){
+    try { var raw = localStorage.getItem(STORE_KEY); return migrate(raw ? JSON.parse(raw) : null); }
+    catch(e){ storageOk = false; return migrate(memoryFallback); }
+  },
+  save: function(){
+    var json = JSON.stringify(S);
+    try { localStorage.setItem(STORE_KEY, json); storageOk = true; }
+    catch(e){ storageOk = false; memoryFallback = JSON.parse(json); toast('Opslaan mislukt: opslag vol of geblokkeerd'); }
+  }
+};
+var storageOk = true;
+var S = store.load();
+
+/* ============ HELPERS ============ */
+function esc(v){ return String(v).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function fmtKg(kg){ return String(kg).replace('.', ','); }
+function curKg(ex){ return S.kg[ex.id] != null ? S.kg[ex.id] : ex.kg; }
+function day(){ return PLAN[S.active ? S.active.dayIndex : ui.pickDay]; }
+function activeEntry(ex){
+  var e = S.active.exercises.find(function(x){ return x.id === ex.id; });
+  if (!e) { e = { id:ex.id, name:ex.name, sets:[] }; S.active.exercises.push(e); }
+  return e;
+}
+var toastTimer = null;
+function toast(msg){
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.hidden = true; }, 2500);
+}
+
+/* ============ UI STATE (niet bewaard) ============ */
+var ui = { view: 'home', pickDay: Rules.nextDayIndex(S.sessions, PLAN.length), draftReps: null, touched: false, diag: false };
+if (S.active) ui.view = 'workout';
+
+/* ============ ACTIONS ============ */
+var actions = {
+  pick: function(i){ ui.pickDay = +i; render(); },
+  start: function(){
+    S.active = { dayIndex: ui.pickDay, startedAt: Date.now(), exIdx: 0, exercises: [], restEndsAt: null, restTotal: 0 };
+    resetDraft(); store.save(); ui.view = 'workout'; wake.on(); render();
+  },
+  minus: function(){ ensureDraft(); ui.draftReps = Math.max(0, ui.draftReps - 1); ui.touched = true; render(); },
+  plus: function(){ ensureDraft(); ui.draftReps = ui.draftReps + 1; ui.touched = true; render(); },
+  kg: function(v){ var ex = curEx(); S.kg[ex.id] = +v; store.save(); render(); },
+  setDone: function(){
+    var d = day(), ex = curEx(), e = activeEntry(ex);
+    ensureDraft();
+    var idx = nextSetIdx(ex, e);
+    if (idx === null) return;
+    e.sets[idx] = { reps: ui.draftReps, kg: curKg(ex), done: true };
+    var rest = Rules.restAfter(d, S.active.exIdx);
+    var lastOfEx = nextSetIdx(ex, e) === null;
+    if (ex.ss) {
+      // superset: meteen naar de partner, zonder rust
+      var pi = d.exercises.findIndex(function(x){ return x.id === ex.ss; });
+      if (pi >= 0) S.active.exIdx = pi;
+      toast('Superset: meteen door naar ' + d.exercises[pi].name);
+    } else {
+      var partnerIdx = d.exercises.findIndex(function(x){ return x.ss === ex.id; });
+      if (partnerIdx >= 0 && nextSetIdx(d.exercises[partnerIdx], activeEntry(d.exercises[partnerIdx])) !== null) S.active.exIdx = partnerIdx;
+      else if (lastOfEx) S.active.exIdx = firstOpenEx(d, S.active.exIdx);
+    }
+    if (rest > 0 && !Rules.isComplete(S.active, d)) { S.active.restEndsAt = Date.now() + rest * 1000; S.active.restTotal = rest; }
+    resetDraft(); store.save(); render();
+  },
+  undo: function(){
+    var ex = curEx(), e = activeEntry(ex);
+    for (var i = e.sets.length - 1; i >= 0; i--) if (e.sets[i] && e.sets[i].done) { e.sets.splice(i, 1); break; }
+    resetDraft(); store.save(); render();
+  },
+  ex: function(dir){
+    var n = day().exercises.length;
+    S.active.exIdx = (S.active.exIdx + (+dir) + n) % n;
+    resetDraft(); store.save(); render();
+  },
+  restAdd: function(){ if (S.active.restEndsAt) { S.active.restEndsAt += 30000; S.active.restTotal += 30; store.save(); render(); } },
+  restSkip: function(){ S.active.restEndsAt = null; store.save(); render(); },
+  finish: function(){
+    var d = day();
+    var done = S.active.exercises.map(function(e){ return { id:e.id, name:e.name, sets:e.sets.filter(function(s){ return s && s.done; }) }; })
+                                 .filter(function(e){ return e.sets.length; });
+    if (!done.length) { if (confirm('Geen sets gelogd. Workout annuleren?')) { S.active = null; store.save(); ui.view = 'home'; wake.off(); render(); } return; }
+    if (!Rules.isComplete(S.active, d) && !confirm('Niet alle sets zijn af. Toch afronden?')) return;
+    var session = { dayIndex: S.active.dayIndex, dayId: d.id, startedAt: S.active.startedAt, endedAt: Date.now(), exercises: done };
+    ui.summary = buildSummary(session);
+    S.sessions.push(session); S.active = null; store.save();
+    ui.pickDay = Rules.nextDayIndex(S.sessions, PLAN.length);
+    ui.view = 'done'; wake.off(); render();
+  },
+  applySuggest: function(id, to){ S.kg[id] = +to; store.save(); toast('Gewicht aangepast naar ' + fmtKg(to) + ' kg'); render(); },
+  home: function(){ ui.view = 'home'; render(); },
+  resume: function(){ ui.view = 'workout'; wake.on(); render(); },
+  exportData: function(){ exportJson(); },
+  importData: function(){ document.getElementById('importFile').click(); },
+  diag: function(){ ui.diag = !ui.diag; render(); }
+};
+function curEx(){ return day().exercises[S.active.exIdx]; }
+function nextSetIdx(ex, e){ for (var i = 0; i < ex.sets; i++) if (!e.sets[i] || !e.sets[i].done) return i; return null; }
+function firstOpenEx(d, from){
+  for (var k = 1; k <= d.exercises.length; k++) {
+    var i = (from + k) % d.exercises.length;
+    if (nextSetIdx(d.exercises[i], activeEntry(d.exercises[i])) !== null) return i;
+  }
+  return from;
+}
+function resetDraft(){ ui.draftReps = null; ui.touched = false; }
+function ensureDraft(){
+  if (ui.draftReps !== null) return;
+  var ex = curEx(), e = activeEntry(ex), idx = nextSetIdx(ex, e);
+  var prev = Rules.lastRepsFor(S.sessions, ex.id, idx === null ? 0 : idx);
+  var r = Rules.parseRange(ex.reps);
+  ui.draftReps = prev != null ? prev : (r ? r.min : 10);
+}
+function buildSummary(session){
+  var lines = [], better = 0;
+  session.exercises.forEach(function(e){
+    var prev = Rules.entriesFor(S.sessions, e.id)[0];
+    var now = e.sets.reduce(function(a, s){ return a + s.reps; }, 0);
+    if (prev) {
+      var before = prev.sets.reduce(function(a, s){ return a + (s.done ? s.reps : 0); }, 0);
+      if (now > before) { better++; lines.push({ name:e.name, txt: before + ' → ' + now + ' reps' }); }
+    }
+  });
+  return { sets: session.exercises.reduce(function(a, e){ return a + e.sets.length; }, 0), mins: Math.round((session.endedAt - session.startedAt) / 60000), better: lines };
+}
+
+/* ============ EXPORT / IMPORT ============ */
+function exportJson(){
+  var blob = new Blob([JSON.stringify({ app:'workout', exportedAt:new Date().toISOString(), state:S }, null, 2)], { type:'application/json' });
+  var name = 'workout-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+  var file = null;
+  try { file = new File([blob], name, { type:'application/json' }); } catch(e){}
+  if (file && navigator.canShare && navigator.canShare({ files:[file] })) {
+    navigator.share({ files:[file], title:name }).then(markExported).catch(function(){});
+  } else {
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); markExported();
+  }
+}
+function markExported(){ S.lastExport = Date.now(); store.save(); toast('Backup gemaakt'); render(); }
+document.getElementById('importFile').addEventListener('change', function(ev){
+  var f = ev.target.files[0]; if (!f) return;
+  f.text().then(function(txt){
+    var data = JSON.parse(txt);
+    var next = migrate(data && data.state);
+    if (!confirm('Backup met ' + next.sessions.length + ' sessies terugzetten? Dit vervangt wat nu op dit toestel staat.')) return;
+    S = next; store.save(); ui.view = S.active ? 'workout' : 'home'; ui.pickDay = Rules.nextDayIndex(S.sessions, PLAN.length);
+    toast(S.sessions.length + ' sessies hersteld'); render();
+  }).catch(function(){ toast('Dit bestand kan ik niet lezen'); });
+  ev.target.value = '';
+});
+
+/* ============ SCHERM AAN (Wake Lock waar iOS het toelaat) ============ */
+var wake = {
+  lock: null, supported: 'wakeLock' in navigator, status: 'uit',
+  on: function(){
+    if (!wake.supported) { wake.status = 'niet ondersteund'; return; }
+    navigator.wakeLock.request('screen').then(function(l){
+      wake.lock = l; wake.status = 'aan';
+      l.addEventListener('release', function(){ wake.status = 'vrijgegeven'; });
+    }).catch(function(e){ wake.status = 'geweigerd (' + e.name + ')'; });
+  },
+  off: function(){ if (wake.lock) { wake.lock.release().catch(function(){}); wake.lock = null; } wake.status = 'uit'; }
+};
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState === 'visible') { if (S.active && ui.view === 'workout') wake.on(); render(); }
+});
+
+/* ============ RENDER ============ */
+function render(){
+  var el = document.getElementById('app');
+  el.innerHTML = ui.view === 'workout' && S.active ? viewWorkout() : ui.view === 'done' ? viewDone() : viewHome();
+  tickTimer();
+}
+function viewHome(){
+  var d = PLAN[ui.pickDay], next = Rules.nextDayIndex(S.sessions, PLAN.length);
+  var wk = Rules.weekStart(Date.now());
+  var thisWeek = S.sessions.filter(function(s){ return Rules.weekStart(s.endedAt) === wk; }).length;
+  var h = '';
+  h += '<div class="stack">';
+  h += '<div><div class="eyebrow">' + (ui.pickDay === next ? 'Volgende in de rij' : 'Zelf gekozen') + '</div><h1 class="h1">' + esc(d.name) + '</h1><div class="muted">' + esc(d.title) + ' · ' + d.exercises.length + ' oefeningen</div></div>';
+  if (S.active) h += '<button class="btn-big" data-act="resume">Hervat workout</button>';
+  h += '<div class="daypick" role="group" aria-label="Kies dag">' + PLAN.map(function(p, i){ return '<button data-act="pick" data-arg="' + i + '" class="' + (i === ui.pickDay ? 'on' : '') + '" aria-pressed="' + (i === ui.pickDay) + '">' + esc(p.name) + '</button>'; }).join('') + '</div>';
+  h += '<div class="card exlist">' + d.exercises.map(function(ex){
+    return '<div class="ex"><div><div>' + esc(ex.name) + (ex.elbow ? ' <span class="tag">elleboog</span>' : '') + '</div><div class="small muted">' + ex.sets + ' × ' + esc(ex.reps) + (ex.ss ? ' · superset' : '') + '</div></div><div class="num">' + (curKg(ex) ? fmtKg(curKg(ex)) + ' kg' : 'lichaam') + '</div></div>';
+  }).join('') + '</div>';
+  h += '<div class="row"><div class="card grow"><div class="num" style="font-size:28px">' + thisWeek + ' / 5</div><div class="small muted">deze week</div></div><div class="card grow"><div class="num" style="font-size:28px">' + S.sessions.length + '</div><div class="small muted">workouts totaal</div></div></div>';
+  if (!S.active) h += '<button class="btn-big" data-act="start">Start ' + esc(d.name) + '</button>';
+  h += '<div class="row"><button class="btn grow" data-act="exportData">Backup maken</button><button class="btn grow" data-act="importData">Backup terugzetten</button></div>';
+  h += '<button class="btn" data-act="diag">' + (ui.diag ? 'Verberg' : 'Toon') + ' PoC-diagnose</button>';
+  if (ui.diag) h += '<div class="card diag">' + diagLines().map(esc).join('<br>') + '</div>';
+  h += '</div>';
+  return h;
+}
+function viewWorkout(){
+  var d = day(), ex = curEx(), e = activeEntry(ex), idx = nextSetIdx(ex, e);
+  ensureDraft();
+  var kg = curKg(ex);
+  var prev = idx === null ? null : Rules.lastRepsFor(S.sessions, ex.id, idx);
+  var sug = Rules.suggestion(S.sessions, ex, kg);
+  var mins = Math.floor((Date.now() - S.active.startedAt) / 60000);
+  var h = '';
+  h += '<div class="topbar"><button class="icon-btn" data-act="home" aria-label="Naar start"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span class="eyebrow">' + esc(d.name) + ' · ' + mins + ' min</span><button class="icon-btn" data-act="finish" aria-label="Workout afronden" style="width:auto;padding:0 12px;color:var(--accent);font-weight:600">Klaar</button></div>';
+  h += '<div class="eyebrow acc">Oefening ' + (S.active.exIdx + 1) + ' / ' + d.exercises.length + (ex.ss ? ' · superset' : '') + '</div>';
+  h += '<h1 class="h1">' + esc(ex.name) + '</h1>';
+  h += '<div class="muted small" style="margin-top:4px">' + ex.sets + ' × ' + esc(ex.reps) + ' · rust ' + (ex.ss ? '0' : ex.rest) + ' s</div>';
+  h += '<div class="sets">';
+  for (var i = 0; i < ex.sets; i++) {
+    var s = e.sets[i], cls = s && s.done ? 'done' : (i === idx ? 'cur' : '');
+    h += '<div class="set ' + cls + '"><b>' + (s && s.done ? s.reps : '·') + '</b><span>SET ' + (i + 1) + '</span></div>';
+  }
+  h += '</div>';
+  if (sug) h += '<button class="suggest" style="margin-top:12px;text-align:left;width:100%" data-act="applySuggest" data-arg="' + esc(ex.id) + '" data-arg2="' + sug.to + '"><div class="eyebrow" style="color:inherit">Klaar voor meer</div><div class="num" style="font-size:24px">' + fmtKg(sug.from) + ' → ' + fmtKg(sug.to) + ' kg · tik om toe te passen</div><div class="small">' + esc(sug.reason) + '</div></button>';
+  h += '<div class="spacer"></div>';
+  if (idx !== null) {
+    h += '<div class="counter"><button class="pm" data-act="minus" aria-label="Rep minder">−</button><div class="val"><b class="' + (ui.touched ? '' : 'ghost') + '">' + ui.draftReps + '</b><span class="eyebrow">' + (prev != null ? 'Reps · vorig ' + prev : 'Reps · eerste keer') + '</span></div><button class="pm" data-act="plus" aria-label="Rep meer">+</button></div>';
+    if (kg) {
+      var lo = Rules.prevStep(kg), hi = Rules.nextStep(kg);
+      h += '<div class="ladder">' + (lo !== null ? '<button data-act="kg" data-arg="' + lo + '">' + fmtKg(lo) + '</button>' : '') + '<button class="on" aria-pressed="true">' + fmtKg(kg) + ' KG</button>' + (hi !== null ? '<button data-act="kg" data-arg="' + hi + '">' + fmtKg(hi) + '</button>' : '') + '</div>';
+    }
+  } else {
+    h += '<div class="card" style="text-align:center"><div class="h2">Oefening klaar</div><div class="muted small">Ga naar de volgende of rond af.</div></div>';
+  }
+  var wu = Rules.warmup({ exercises: d.exercises.map(function(x){ return Object.assign({}, x, { kg: curKg(x) }); }) }, S.active.exIdx);
+  if (wu && idx === 0) h += '<div class="tip" style="margin-top:14px"><span><b>Eerst opwarmen:</b> 1 × ' + wu.reps + ' op ' + fmtKg(wu.kg) + ' kg. Telt niet mee.</span></div>';
+  if (ex.elbow) h += '<div class="tip" style="margin-top:14px"><span>' + esc(ELBOW_TIP) + '</span></div>';
+  h += '<div class="spacer"></div>';
+  h += '<div class="stack" style="margin-top:14px">';
+  if (idx !== null) h += '<button class="btn-big" data-act="setDone">Set ' + (idx + 1) + ' klaar</button>';
+  h += '<div class="row"><button class="btn grow" data-act="ex" data-arg="-1">Vorige</button><button class="btn" data-act="undo" aria-label="Laatste set ongedaan maken">Ongedaan</button><button class="btn grow" data-act="ex" data-arg="1">Volgende</button></div>';
+  h += '</div>';
+  if (S.active.restEndsAt) h += '<div style="height:84px"></div><div class="timer" id="timer"><div class="grow"><div class="row" style="gap:8px;align-items:baseline"><span class="small muted" id="timerLabel">Rust</span><span class="t" id="timerVal">0:00</span></div><div class="bar"><i id="timerBar" style="width:100%"></i></div></div><button data-act="restAdd">+30</button><button data-act="restSkip">Skip</button></div>';
+  return h;
+}
+function viewDone(){
+  var s = ui.summary || { sets:0, mins:0, better:[] };
+  var d = PLAN[S.sessions.length ? S.sessions[S.sessions.length - 1].dayIndex : 0];
+  var h = '<div class="stack">';
+  h += '<div><div class="eyebrow">' + esc(d.name) + ' · ' + s.mins + ' min</div><h1 class="h1">Klaar. ' + s.sets + ' sets</h1></div>';
+  if (s.better.length) h += '<div class="card"><div class="h2" style="margin-bottom:6px">Wat beter ging</div>' + s.better.map(function(b){ return '<div class="row" style="justify-content:space-between;padding:6px 0"><span>' + esc(b.name) + '</span><span class="num">' + esc(b.txt) + '</span></div>'; }).join('') + '</div>';
+  else h += '<div class="card muted">Eerste keer of gelijk aan vorige keer. Volgende keer vergelijkt de app per oefening.</div>';
+  h += '<div class="spacer"></div><button class="btn-big btn-light" data-act="home">Verder</button></div>';
+  return h;
+}
+function diagLines(){
+  var standalone = (window.navigator.standalone === true) || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  return [
+    'homescreen-app: ' + (standalone ? 'ja' : 'nee (open via Safari > Deel > Zet op beginscherm)'),
+    'service worker: ' + swStatus,
+    'opslag: ' + (storageOk ? 'ok' : 'NIET beschikbaar, data gaat verloren bij sluiten'),
+    'scherm aan (wake lock): ' + (wake.supported ? wake.status : 'niet ondersteund op dit toestel'),
+    'sessies: ' + S.sessions.length + ' · actieve workout: ' + (S.active ? 'ja' : 'nee'),
+    'user agent: ' + navigator.userAgent.slice(0, 80)
+  ];
+}
+
+/* ============ TIMER-TICK: enkel tekst updaten, rekent op kloktijd ============ */
+var tickHandle = null;
+function tickTimer(){
+  clearInterval(tickHandle); tickHandle = null;
+  if (!S.active || !S.active.restEndsAt || ui.view !== 'workout') return;
+  var upd = function(){
+    var left = Rules.remaining(S.active.restEndsAt, Date.now());
+    var box = document.getElementById('timer'); if (!box) return;
+    var over = left <= 0, a = Math.abs(left);
+    document.getElementById('timerVal').textContent = (over ? '+' : '') + Math.floor(a / 60) + ':' + String(a % 60).padStart(2, '0');
+    document.getElementById('timerLabel').textContent = over ? 'Rust voorbij' : 'Rust';
+    document.getElementById('timerBar').style.width = (over ? 0 : Math.max(0, Math.min(100, left / S.active.restTotal * 100))) + '%';
+    box.classList.toggle('over', over);
+    if (over && !box.dataset.buzzed) { box.dataset.buzzed = '1'; if (navigator.vibrate) navigator.vibrate([200, 100, 200]); }
+  };
+  upd(); tickHandle = setInterval(upd, 250);
+}
+
+/* ============ EVENTS: één delegatie-handler ============ */
+document.getElementById('app').addEventListener('click', function(ev){
+  var b = ev.target.closest('[data-act]'); if (!b) return;
+  var fn = actions[b.dataset.act]; if (!fn) return;
+  fn(b.dataset.arg, b.dataset.arg2);
+});
+
+/* ============ SERVICE WORKER (offline) ============ */
+var swStatus = 'niet ondersteund';
+if ('serviceWorker' in navigator) {
+  swStatus = 'registreren…';
+  navigator.serviceWorker.register('sw.js').then(function(){ swStatus = 'actief'; }).catch(function(e){ swStatus = 'fout: ' + e.message; });
+}
+
+render();
+</script>
+</body>
+</html>
