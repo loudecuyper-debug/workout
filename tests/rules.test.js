@@ -1,11 +1,11 @@
-// Unit tests voor de pure regels in poc/index.html (<script id="rules">).
+// Unit tests voor de pure regels in index.html (<script id="rules">).
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const html = fs.readFileSync(path.join(__dirname, '..', 'poc', 'index.html'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const code = /<script id="rules">([\s\S]*?)<\/script>/.exec(html)[1];
 const ctx = {};
 vm.runInNewContext(code + ';this.Rules=Rules;', ctx);
@@ -96,4 +96,84 @@ test('week begint op maandag', () => {
   const sun = new Date(2026, 10, 29, 20).getTime();
   const mon = new Date(2026, 10, 23, 8).getTime();
   assert.strictEqual(R.weekStart(sun), R.weekStart(mon));
+});
+
+const D = 86400000;
+const at = (t, dayIndex, entries) => ({ dayIndex, startedAt: t - 3600000, endedAt: t, exercises: entries || [] });
+const MON = new Date(2026, 0, 5, 18).getTime(); // maandag
+
+test('blok: week 1 bij start, week 6 is licht, daarna blok 2', () => {
+  assert.deepStrictEqual({ ...R.blockInfo([], MON) }, { block: 1, week: 1, light: false });
+  const s = [at(MON, 0)];
+  assert.strictEqual(R.blockInfo(s, MON + 5 * 7 * D).week, 6);
+  assert.strictEqual(R.blockInfo(s, MON + 5 * 7 * D).light, true);
+  assert.deepStrictEqual({ ...R.blockInfo(s, MON + 6 * 7 * D) }, { block: 2, week: 1, light: false });
+});
+
+test('lichte week: geen gewichtssuggestie', () => {
+  const e = ex({});
+  const ready = [sess(0, [entry('x', [[12, 9.5], [12, 9.5], [12, 9.5]])])];
+  assert.strictEqual(R.suggestion(ready, e, 9.5, true), null);
+});
+
+test('reeks: 3 per week telt, vrije week vangt een gemiste week op', () => {
+  const wk = (w, n) => Array.from({ length: n }, (_, i) => at(MON + w * 7 * D + i * D, i % 5));
+  // week 0: 3, week 1: 3, week 2: 0 (vrije week), week 3 (nu): 3
+  const s = [...wk(0, 3), ...wk(1, 3), ...wk(3, 3)];
+  const st = R.streakInfo(s, MON + 3 * 7 * D + 3 * D);
+  assert.strictEqual(st.streak, 3);
+  assert.strictEqual(st.usedFree, 1);
+  assert.strictEqual(st.free, 0);
+  // twee gemiste weken op rij: reeks breekt
+  const s2 = [...wk(0, 3), ...wk(3, 3)];
+  assert.strictEqual(R.streakInfo(s2, MON + 3 * 7 * D + 3 * D).streak, 1);
+  // volle week geeft een extra vrije week
+  const s3 = [...wk(0, 5)];
+  assert.strictEqual(R.streakInfo(s3, MON + 7 * D).free, 2);
+  // lopende week onder 3 breekt de reeks niet
+  assert.strictEqual(R.streakInfo([...wk(0, 3), at(MON + 7 * D, 0)], MON + 7 * D + D).streak, 1);
+});
+
+test('sets per spiergroep tellen alleen deze week', () => {
+  const info = (id) => ({ a: { muscle: 'Borst' }, b: { muscle: 'Rug' } })[id];
+  const s = [at(MON - 7 * D, 0, [entry('a', [[10, 9.5]])]), at(MON, 0, [entry('a', [[10, 9.5], [10, 9.5]]), entry('b', [[8, 12]])])];
+  const m = R.muscleSets(s, MON + D, info);
+  assert.strictEqual(m.Borst, 2);
+  assert.strictEqual(m.Rug, 1);
+});
+
+test('vergelijking met vorige keer en records', () => {
+  const before = [at(MON, 0, [entry('a', [[10, 9.5], [10, 9.5]]), entry('b', [[8, 12]])])];
+  const now = at(MON + 2 * D, 0, [entry('a', [[11, 9.5], [10, 9.5]]), entry('b', [[8, 14.5]])]);
+  const c = R.compareToPrevious(before, now);
+  assert.strictEqual(c[0].better, true);
+  assert.strictEqual(c[1].better, true);
+  const prs = R.prsFor(before, now);
+  assert.strictEqual(prs.length, 1);
+  assert.strictEqual(prs[0].id, 'b');
+  assert.strictEqual(R.prsFor([], now).length, 0, 'eerste keer is geen record');
+});
+
+test('6 weken geleden: alleen als er toen iets was en het nu beter is', () => {
+  const old = at(MON, 0, [entry('a', [[8, 9.5]])]);
+  const now = at(MON + 43 * D, 0, [entry('a', [[8, 12]])]);
+  assert.strictEqual(R.sixWeeksAgo([old], now).kgThen, 9.5);
+  assert.strictEqual(R.sixWeeksAgo([], now), null);
+  assert.strictEqual(R.sixWeeksAgo([at(MON + 30 * D, 0, [entry('a', [[8, 9.5]])])], now), null, 'te recent');
+});
+
+test('reps tot de volgende stap', () => {
+  const e = ex({});
+  const s = [sess(0, [entry('x', [[12, 9.5], [10, 9.5], [9, 9.5]])])];
+  assert.deepStrictEqual({ ...R.repsToNext(s, e, 9.5) }, { have: 31, need: 36, to: 12 });
+  assert.strictEqual(R.repsToNext(s, ex({ reps: 'max' }), 9.5), null);
+});
+
+test('vergelijking: onvolledige workout telt alleen dezelfde sets', () => {
+  const before = [at(MON, 0, [entry('a', [[10, 9.5], [10, 9.5], [9, 9.5]])])];
+  const now = at(MON + 2 * D, 0, [entry('a', [[11, 9.5]])]);
+  const c = R.compareToPrevious(before, now)[0];
+  assert.strictEqual(c.repsFrom, 10);
+  assert.strictEqual(c.repsTo, 11);
+  assert.strictEqual(c.better, true);
 });
