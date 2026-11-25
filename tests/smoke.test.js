@@ -78,7 +78,7 @@ test('volledige workout loggen, superset zonder rust, rotatie gaat door', () => 
 test('vorige reps worden voorgesteld en +/- past ze aan', () => {
   const prev = { v: 1, kg: {}, active: null, lastExport: null, sessions: [
     { dayIndex: 2, endedAt: Date.now() - 86400000, startedAt: Date.now() - 90000000,
-      exercises: [{ id: 'goblet-squat', name: 'Goblet Squat', sets: [{ reps: 9, kg: 12, done: true }] }] }
+      exercises: [{ id: 'rdl', name: 'Romanian Deadlift', sets: [{ reps: 9, kg: 12, done: true }] }] }
   ] };
   const a = boot(prev);
   a.click('[data-act="pick"][data-arg="2"]');
@@ -281,15 +281,15 @@ test('extra set en extra oefening tijdens een workout', () => {
   assert.strictEqual(a.w.document.querySelectorAll('.sets .set').length, 5, 'Chest Press 4 -> 5 sets');
   a.click('[data-act="more"]');
   a.click('[data-act="addExOpen"]');
-  a.click('[data-act="addEx"][data-arg="lateral-raise"]');
-  assert.strictEqual(a.$('.h1').textContent, 'Lateral Raise');
-  assert.match(a.text(), /Oefening 7 \/ 7/);
+  a.click('[data-act="addEx"][data-arg="arnold-press"]');
+  assert.strictEqual(a.$('.h1').textContent, 'Arnold Press');
+  assert.match(a.text(), /Oefening 8 \/ 8/);
   a.click('[data-act="setDone"]');
   const st = a.state().active;
-  assert.deepStrictEqual([...st.added], ['lateral-raise']);
-  assert.ok(st.exercises.find((e) => e.id === 'lateral-raise').sets[0].done);
+  assert.deepStrictEqual([...st.added], ['arnold-press']);
+  assert.ok(st.exercises.find((e) => e.id === 'arnold-press').sets[0].done);
   const b = boot(a.state());
-  assert.strictEqual(b.$('.h1').textContent, 'Lateral Raise', 'overleeft herladen');
+  assert.strictEqual(b.$('.h1').textContent, 'Arnold Press', 'overleeft herladen');
   assert.deepStrictEqual(a.errors, []);
 });
 
@@ -301,14 +301,14 @@ test('schema aanpassen in Instellingen werkt door in de workout', () => {
   a.click('[data-act="planSets"][data-arg="0"][data-arg2="1"]');
   a.click('[data-act="planReps"][data-arg="0"]');
   a.click('[data-act="planRest"][data-arg="0"][data-arg2="15"]');
-  a.click('[data-act="planRemove"][data-arg="5"]');
+  a.click('[data-act="planRemove"][data-arg="6"]');
   a.click('[data-act="planAddOpen"]');
-  a.click('[data-act="planAdd"][data-arg="lateral-raise"]');
-  a.click('[data-act="planMove"][data-arg="5"][data-arg2="-1"]');
+  a.click('[data-act="planAdd"][data-arg="arnold-press"]');
+  a.click('[data-act="planMove"][data-arg="6"][data-arg2="-1"]');
   const p = a.state().plan[0].exercises;
   assert.deepStrictEqual([p[0].sets, p[0].reps, p[0].rest], [5, '8-12', 105]);
-  assert.strictEqual(p.length, 6);
-  assert.strictEqual(p[4].id, 'lateral-raise');
+  assert.strictEqual(p.length, 7);
+  assert.strictEqual(p[5].id, 'arnold-press');
   assert.ok(!p.some((x) => x.id === 'diamond-pushup'));
   a.click('[data-act="planBack"]'); a.click('[data-act="planBack"]');
   a.click('[data-act="tab"][data-arg="today"]');
@@ -348,4 +348,17 @@ test('Vandaag: focus en details standaard ingeklapt', () => {
   assert.strictEqual(a.$('.goal'), null);
   a.click('[data-act="fold"][data-arg="focus"]');
   assert.strictEqual(a.w.document.querySelectorAll('.goal').length, 3);
+});
+
+test('standaardschema: benen kort voor lopers, meer schouders', () => {
+  const a = boot();
+  const P = a.w.eval('DEFAULT_PLAN');
+  assert.strictEqual(P[2].exercises.map((x) => x.id).join(','), 'rdl,bulgarian,nordic,calf-single');
+  assert.ok(P[0].exercises.some((x) => x.id === 'lateral-raise'), 'Push A heeft lateral raise');
+  assert.strictEqual(P[4].exercises.find((x) => x.id === 'reverse-fly').sets, 4);
+  assert.ok(a.w.eval('validPlan(DEFAULT_PLAN)'));
+  a.click('[data-act="pick"][data-arg="2"]');
+  a.click('[data-act="start"]');
+  assert.strictEqual(a.$('.h1').textContent, 'Romanian Deadlift');
+  assert.deepStrictEqual(a.errors, []);
 });
